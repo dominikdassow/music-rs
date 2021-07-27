@@ -2,7 +2,9 @@ package de.dominikdassow.musicrs.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.dominikdassow.musicrs.model.ChallengePlaylist;
 import de.dominikdassow.musicrs.model.DatasetPlaylist;
+import de.dominikdassow.musicrs.repository.ChallengeSetRepository;
 import de.dominikdassow.musicrs.repository.DatasetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,23 +23,30 @@ public class DatabaseService {
     @Autowired
     private DatasetRepository datasetRepository;
 
+    @Autowired
+    private ChallengeSetRepository challengeSetRepository;
+
     public void init() throws Exception {
         // datasetRepository.deleteAll();
+        // challengeSetRepository.deleteAll();
+
         // importDataset();
+        // importChallengeSet();
 
-        StopWatch timer = new StopWatch();
-        timer.start();
+        // StopWatch timer = new StopWatch();
+        // timer.start();
 
-        log.info("" + datasetRepository.countPlaylistsContainingTrackUri("spotify:track:0UaMYEvWZi0ZqiDOoHU3YI"));
+        // log.info("" + datasetRepository.countPlaylistsContainingTrackUri("spotify:track:0UaMYEvWZi0ZqiDOoHU3YI"));
 
-        timer.stop();
-        log.info("TIME IN SECONDS: " + timer.getTotalTimeSeconds());
+        // timer.stop();
+        // log.info("TIME IN SECONDS: " + timer.getTotalTimeSeconds());
     }
 
     private void importDataset() throws Exception {
         StopWatch timer = new StopWatch();
         ObjectMapper objectMapper = new ObjectMapper();
 
+        log.info("IMPORT DATASET");
         timer.start();
 
         final int slices = 1000;
@@ -46,7 +55,7 @@ public class DatabaseService {
         for (int i = 0; i < (slices * sliceSize); i += sliceSize) {
             final String slice = i + "-" + (i + sliceSize - 1);
 
-            log.info("SLICE: " + slice);
+            log.info("> SLICE: " + slice);
 
             JsonNode root = objectMapper
                 .readTree(new File("data/mpd/mpd.slice." + slice + ".json"));
@@ -59,6 +68,26 @@ public class DatabaseService {
         }
 
         timer.stop();
-        log.info("TIME IN SECONDS: " + timer.getTotalTimeSeconds());
+        log.info("+ TIME IN SECONDS: " + timer.getTotalTimeSeconds());
+    }
+
+    private void importChallengeSet() throws Exception {
+        StopWatch timer = new StopWatch();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        log.info("IMPORT CHALLENGE SET");
+        timer.start();
+
+        JsonNode root = objectMapper
+            .readTree(new File("data/challenge/challenge_set.json"));
+
+        List<ChallengePlaylist> playlists
+            = Arrays.asList(objectMapper.treeToValue(root.get("playlists"), ChallengePlaylist[].class));
+
+        log.info("> CHALLENGE PLAYLISTS: " + playlists.size());
+        challengeSetRepository.saveAll(playlists);
+
+        timer.stop();
+        log.info("+ TIME IN SECONDS: " + timer.getTotalTimeSeconds());
     }
 }
