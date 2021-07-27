@@ -1,5 +1,8 @@
 package de.dominikdassow.musicrs;
 
+import de.dominikdassow.musicrs.service.DatabaseService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.Banner;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.WebApplicationType;
@@ -9,8 +12,13 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import java.util.Arrays;
 
 @SpringBootApplication
+@Slf4j
+@SuppressWarnings("unused")
 public class MusicRsApplication
     implements CommandLineRunner {
+
+    @Autowired
+    private DatabaseService database;
 
     public static void main(String[] args) {
         new SpringApplicationBuilder(MusicRsApplication.class)
@@ -22,7 +30,8 @@ public class MusicRsApplication
 
     @Override
     public void run(String... args) throws Exception {
-        System.out.println("Hello World");
-        System.out.println(Arrays.toString(args));
+        log.info("MusicRsApplication: " + Arrays.toString(args));
+
+        database.init();
     }
 }
