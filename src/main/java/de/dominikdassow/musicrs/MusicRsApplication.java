@@ -1,6 +1,7 @@
 package de.dominikdassow.musicrs;
 
 import de.dominikdassow.musicrs.service.DatabaseService;
+import de.dominikdassow.musicrs.service.RecommendationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.Banner;
@@ -20,6 +21,9 @@ public class MusicRsApplication
     @Autowired
     private DatabaseService database;
 
+    @Autowired
+    private RecommendationService recommendations;
+
     public static void main(String[] args) {
         new SpringApplicationBuilder(MusicRsApplication.class)
             .bannerMode(Banner.Mode.OFF)
@@ -33,5 +37,6 @@ public class MusicRsApplication
         log.info("MusicRsApplication: " + Arrays.toString(args));
 
         database.init();
+        recommendations.run();
     }
 }

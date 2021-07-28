@@ -18,9 +18,18 @@ repositories {
 	mavenCentral()
 }
 
+ext {
+	jMetalVersion = '5.10'
+	rankSysVersion = '0.4.3'
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 	implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.4'
+	implementation "org.uma.jmetal:jmetal-core:${jMetalVersion}"
+	implementation "org.uma.jmetal:jmetal-problem:${jMetalVersion}"
+	implementation "org.uma.jmetal:jmetal-algorithm:${jMetalVersion}"
+	implementation "org.uma.jmetal:jmetal-example:${jMetalVersion}"
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
