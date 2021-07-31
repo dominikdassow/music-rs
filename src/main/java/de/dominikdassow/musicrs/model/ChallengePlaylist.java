@@ -1,15 +1,20 @@
 package de.dominikdassow.musicrs.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.dominikdassow.musicrs.model.json.PlaylistTracksDeserializer;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.List;
+import java.util.Map;
 
 @Data
 @Document(collection = "challenge_set")
-public class ChallengePlaylist {
+public class ChallengePlaylist
+    implements AnyPlaylist {
+
     @Id
     @JsonProperty("pid")
     private Integer id;
@@ -32,6 +37,8 @@ public class ChallengePlaylist {
     @JsonProperty("modified_at")
     private Integer modifiedAt;
 
+    @DBRef
     @JsonProperty("tracks")
-    private List<Track> tracks;
+    @JsonDeserialize(using = PlaylistTracksDeserializer.class)
+    private Map<Integer, Track> tracks;
 }

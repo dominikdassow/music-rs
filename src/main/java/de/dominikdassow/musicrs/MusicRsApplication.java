@@ -37,6 +37,6 @@ public class MusicRsApplication
         log.info("MusicRsApplication: " + Arrays.toString(args));
 
         database.init();
-        recommendations.run();
+        // recommendations.run();
     }
 }

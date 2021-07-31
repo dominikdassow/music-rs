@@ -1,13 +1,23 @@
 package de.dominikdassow.musicrs.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-public class Track {
-    @JsonProperty("pos")
-    private Integer position;
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "tracks")
+public class Track
+    implements AnyDocument {
 
+    @Id
+    @With
+    private Integer id;
+
+    @Indexed(unique = true)
     @JsonProperty("track_uri")
     private String uri;
 

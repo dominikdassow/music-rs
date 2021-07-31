@@ -60,7 +60,7 @@ public class MusicPlaylistContinuationProblem
     @Override
     public void evaluate(MusicPlaylistSolution solution) {
         List<Track> tracks = new ArrayList<>() {{
-            addAll(playlist.getTracks());
+            addAll(playlist.getTracks().values());
             addAll(solution.getVariables());
         }};
 
@@ -72,7 +72,7 @@ public class MusicPlaylistContinuationProblem
     private List<Track> getCandidateTracks() {
         if (candidateTracks == null) {
             candidateTracks = new ArrayList<>() {{
-                similarPlaylists.forEach(playlist -> addAll(playlist.getTracks()));
+                similarPlaylists.forEach(playlist -> addAll(playlist.getTracks().values()));
             }};
         }
 

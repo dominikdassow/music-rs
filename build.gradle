@@ -30,6 +30,9 @@ dependencies {
 	implementation "org.uma.jmetal:jmetal-problem:${jMetalVersion}"
 	implementation "org.uma.jmetal:jmetal-algorithm:${jMetalVersion}"
 	implementation "org.uma.jmetal:jmetal-example:${jMetalVersion}"
+	implementation "org.ranksys:RankSys-core:${rankSysVersion}"
+	implementation "org.ranksys:RankSys-fast:${rankSysVersion}"
+	implementation "org.ranksys:RankSys-nn:${rankSysVersion}"
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

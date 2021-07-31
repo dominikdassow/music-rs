@@ -1,11 +1,10 @@
 package de.dominikdassow.musicrs.service;
 
+import de.dominikdassow.musicrs.model.AnyPlaylist;
 import de.dominikdassow.musicrs.model.ChallengePlaylist;
 import de.dominikdassow.musicrs.model.DatasetPlaylist;
-import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationRunner;
-import de.dominikdassow.musicrs.recommender.problem.MusicPlaylistContinuationProblem;
+import de.dominikdassow.musicrs.recommender.engine.SimilarPlaylistsEngine;
 import de.dominikdassow.musicrs.repository.ChallengeSetRepository;
-import de.dominikdassow.musicrs.repository.DatasetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,25 +18,23 @@ import java.util.List;
 public class RecommendationService {
 
     @Autowired
-    private DatasetRepository datasetRepository;
-
-    @Autowired
     private ChallengeSetRepository challengeSetRepository;
 
+    @Autowired
+    private SimilarPlaylistsEngine similarPlaylistsEngine;
+
     public void run() {
-        final ChallengePlaylist playlist = challengeSetRepository.findById(1000020).orElseThrow();
+        List<AnyPlaylist> similarPlaylists = similarPlaylistsEngine.getResults(123); // TODO
 
-        final MusicPlaylistContinuationProblem problem
-            = new MusicPlaylistContinuationProblem(playlist, getSimilarPlaylistsFor(playlist));
+        // final ChallengePlaylist playlist = challengeSetRepository.findById(1000020).orElseThrow();
 
-        new MusicPlaylistContinuationRunner.NSGAII(problem).run();
+        // final MusicPlaylistContinuationProblem problem
+        //    = new MusicPlaylistContinuationProblem(playlist, getSimilarPlaylistsFor(playlist));
+
+        // new MusicPlaylistContinuationRunner.NSGAII(problem).run();
     }
 
     private List<DatasetPlaylist> getSimilarPlaylistsFor(ChallengePlaylist playlist) {
-        // TODO
-
-        return new ArrayList<>() {{
-            add(datasetRepository.findById(4).orElseThrow());
-        }};
+        return new ArrayList<>(); // TODO
     }
 }
