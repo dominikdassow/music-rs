@@ -5,6 +5,7 @@ import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.recommender.feature.playlist.AlbumDimension;
 import de.dominikdassow.musicrs.recommender.feature.playlist.ArtistDimension;
 import de.dominikdassow.musicrs.recommender.feature.playlist.TrackDimension;
+import de.dominikdassow.musicrs.repository.ChallengeSetRepository;
 import de.dominikdassow.musicrs.repository.DatasetRepository;
 import es.uam.eps.ir.ranksys.fast.index.FastItemIndex;
 import es.uam.eps.ir.ranksys.fast.index.FastUserIndex;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
 
 @Component
 @Slf4j
@@ -28,6 +30,9 @@ public class PlaylistFeatureIndex
     @Autowired
     private DatasetRepository datasetRepository;
 
+    @Autowired
+    private ChallengeSetRepository challengeSetRepository;
+
     @Getter
     private final ConcurrentMap<Integer, PlaylistFeature> playlistFeatures = new ConcurrentHashMap<>();
 
@@ -36,6 +41,8 @@ public class PlaylistFeatureIndex
 
     @Getter
     private final ConcurrentMap<Integer, List<Integer>> playlistsByFeature = new ConcurrentHashMap<>();
+
+    private Integer lastPlaylistId = 0;
 
     public void init() {
         log.info("PlaylistFeatureIndex::init()");
@@ -47,7 +54,10 @@ public class PlaylistFeatureIndex
         StopWatch timer = new StopWatch();
         timer.start();
 
-        datasetRepository.streamAllWithIdAndFeatures().limit(10_000).parallel().forEach(playlist -> {
+        Stream.concat(
+            challengeSetRepository.streamAllWithIdAndFeatures(),
+            datasetRepository.streamAllWithIdAndFeatures().limit(10_000)
+        ).parallel().forEach(playlist -> {
             featuresByPlaylist.put(playlist.getId(), new ArrayList<>());
 
             playlist.getFeatures().forEach(playlistFeature -> {
@@ -62,6 +72,10 @@ public class PlaylistFeatureIndex
 
         timer.stop();
         log.info("PlaylistFeatureIndex::init() -> " + timer.getTotalTimeSeconds());
+
+        featuresByPlaylist.keySet().forEach(playlistId -> {
+            if (playlistId > lastPlaylistId) lastPlaylistId = playlistId;
+        });
     }
 
     public static List<PlaylistFeature> generateFor(AnyPlaylist playlist) {
@@ -104,7 +118,7 @@ public class PlaylistFeatureIndex
 
     @Override
     public int numUsers() {
-        return featuresByPlaylist.size();
+        return lastPlaylistId - 1;
     }
 
     @Override

@@ -110,6 +110,8 @@ public class DatabaseService {
         List<ChallengePlaylist> playlists
             = Arrays.asList(objectMapper.treeToValue(root.get("playlists"), ChallengePlaylist[].class));
 
+        playlists.forEach(playlist -> playlist.setFeatures(PlaylistFeatureIndex.generateFor(playlist)));
+
         int insertedPlaylists
             = challengeSetRepository.insertMany(playlists, ChallengePlaylist.class);
 

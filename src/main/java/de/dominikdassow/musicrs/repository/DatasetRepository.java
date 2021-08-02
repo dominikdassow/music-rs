@@ -2,6 +2,7 @@ package de.dominikdassow.musicrs.repository;
 
 import de.dominikdassow.musicrs.model.DatasetPlaylist;
 import de.dominikdassow.musicrs.repository.custom.BulkOperationRepository;
+import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -14,4 +15,10 @@ public interface DatasetRepository
 
     @Query(value = "{}", sort = "{ _id : 1 }", fields = "{ _id : 1, features: 1 }")
     Stream<DatasetPlaylist> streamAllWithIdAndFeatures();
+
+    @Aggregation({
+        "{ $match: { _id: ?0 } }",
+        "{ $project: { total: { $size: { $objectToArray: '$tracks' } } } }"
+    })
+    Integer countTracksById(Integer id);
 }
