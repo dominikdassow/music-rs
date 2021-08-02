@@ -15,14 +15,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Generates a unique numerical id for a {@code Track}, identified by its uri.
  */
-@SuppressWarnings("unused")
 public class TrackIdGenerator {
 
     private static AtomicInteger currentId;
 
-    private static final Map<String, Integer> existingTrackUris = new HashMap<>();
+    private static final Map<String, Integer> existing = new HashMap<>();
 
-    public static void init(MongoTemplate mongoTemplate) {
+    public static void initWith(MongoTemplate mongoTemplate) {
+        if (currentId != null) return;
+
         currentId = new AtomicInteger(-1);
 
         List<TrackWithIdAndUri> existing = mongoTemplate.find(new Query() {{
@@ -33,13 +34,14 @@ public class TrackIdGenerator {
         if (existing.isEmpty()) return;
 
         currentId.set(existing.get(existing.size() - 1).getId());
-        existing.forEach(track -> existingTrackUris.put(track.getUri(), track.getId()));
+        existing.forEach(track ->
+            TrackIdGenerator.existing.put(track.getUri(), track.getId()));
     }
 
     public static Integer generate(String uri) {
         Assert.notNull(currentId, "TrackIdGenerator::init() must be called before generate()");
 
-        return existingTrackUris.computeIfAbsent(uri, t -> currentId.incrementAndGet());
+        return existing.computeIfAbsent(uri, t -> currentId.incrementAndGet());
     }
 
     @Data

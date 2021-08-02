@@ -1,8 +1,10 @@
 package de.dominikdassow.musicrs.recommender.index;
 
 import de.dominikdassow.musicrs.model.AnyPlaylist;
-import de.dominikdassow.musicrs.model.DatasetPlaylist;
-import de.dominikdassow.musicrs.model.PlaylistFeature;
+import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
+import de.dominikdassow.musicrs.recommender.feature.playlist.AlbumDimension;
+import de.dominikdassow.musicrs.recommender.feature.playlist.ArtistDimension;
+import de.dominikdassow.musicrs.recommender.feature.playlist.TrackDimension;
 import de.dominikdassow.musicrs.repository.DatasetRepository;
 import es.uam.eps.ir.ranksys.fast.index.FastItemIndex;
 import es.uam.eps.ir.ranksys.fast.index.FastUserIndex;
@@ -10,88 +12,79 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StopWatch;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Component
 @Slf4j
 @SuppressWarnings("unused")
 public class PlaylistFeatureIndex
-    implements FastUserIndex<AnyPlaylist>, FastItemIndex<PlaylistFeature> {
+    implements FastUserIndex<Integer>, FastItemIndex<PlaylistFeature> {
 
     @Autowired
     private DatasetRepository datasetRepository;
 
     @Getter
-    private final Map<Integer, DatasetPlaylist> playlists = new HashMap<>();
+    private final ConcurrentMap<Integer, PlaylistFeature> playlistFeatures = new ConcurrentHashMap<>();
 
     @Getter
-    private final Map<Integer, PlaylistFeature> playlistFeatures = new HashMap<>();
+    private final ConcurrentMap<Integer, List<Integer>> featuresByPlaylist = new ConcurrentHashMap<>();
 
     @Getter
-    private final Map<Integer, List<PlaylistFeature>> featuresByPlaylist = new HashMap<>();
-
-    @Getter
-    private final Map<Integer, List<DatasetPlaylist>> playlistsByFeature = new HashMap<>();
+    private final ConcurrentMap<Integer, List<Integer>> playlistsByFeature = new ConcurrentHashMap<>();
 
     public void init() {
-        playlists.clear();
+        log.info("PlaylistFeatureIndex::init()");
+
         playlistFeatures.clear();
         featuresByPlaylist.clear();
         playlistsByFeature.clear();
 
-        // TODO: Use database for storing this data
-        datasetRepository.findAll().forEach(playlist -> {
-            playlists.put(playlist.getId(), playlist);
+        StopWatch timer = new StopWatch();
+        timer.start();
 
-            final Map<String, Double> tracks = new HashMap<>();
-            final Map<String, Double> artists = new HashMap<>();
-            final Map<String, Double> albums = new HashMap<>();
-
-            playlist.getTracks().values().forEach(track -> {
-                tracks.put(track.getUri(), artists.getOrDefault(track.getUri(), 0.0) + 0.75);
-                artists.put(track.getArtistUri(), artists.getOrDefault(track.getArtistUri(), 0.0) + 1.25);
-                albums.put(track.getAlbumUri(), albums.getOrDefault(track.getAlbumUri(), 0.0) + 1.0);
-            });
-
+        datasetRepository.streamAllWithIdAndFeatures().limit(10_000).parallel().forEach(playlist -> {
             featuresByPlaylist.put(playlist.getId(), new ArrayList<>());
 
-            tracks.forEach((identifier, value) ->
-                new PlaylistFeature(PlaylistFeature.Type.TRACK, identifier, value) {{
-                    featuresByPlaylist.get(playlist.getId()).add(this);
-                    playlistFeatures.put(getId(), this);
-                }});
+            playlist.getFeatures().forEach(playlistFeature -> {
+                playlistFeatures.putIfAbsent(playlistFeature.getId(), playlistFeature);
 
-            artists.forEach((identifier, value) ->
-                new PlaylistFeature(PlaylistFeature.Type.ARTIST, identifier, value) {{
-                    featuresByPlaylist.get(playlist.getId()).add(this);
-                    playlistFeatures.put(getId(), this);
-                }});
+                featuresByPlaylist.get(playlist.getId()).add(playlistFeature.getId());
 
-            albums.forEach((identifier, value) ->
-                new PlaylistFeature(PlaylistFeature.Type.ALBUM, identifier, value) {{
-                    featuresByPlaylist.get(playlist.getId()).add(this);
-                    playlistFeatures.put(getId(), this);
-                }});
+                playlistsByFeature.putIfAbsent(playlistFeature.getId(), new ArrayList<>());
+                playlistsByFeature.get(playlistFeature.getId()).add(playlist.getId());
+            });
         });
 
-        featuresByPlaylist.entrySet().parallelStream()
-            .forEach(entry -> entry.getValue().forEach(playlistFeature -> {
-                List<DatasetPlaylist> playlistsWithFeature
-                    = playlistsByFeature.getOrDefault(playlistFeature.getId(), new ArrayList<>());
+        timer.stop();
+        log.info("PlaylistFeatureIndex::init() -> " + timer.getTotalTimeSeconds());
+    }
 
-                playlistsWithFeature.add(playlists.get(entry.getKey()));
+    public static List<PlaylistFeature> generateFor(AnyPlaylist playlist) {
+        final List<PlaylistFeature> all = new ArrayList<>();
 
-                playlistsByFeature.put(playlistFeature.getId(), playlistsWithFeature);
-            }));
+        new TrackDimension(playlist) {{
+            all.addAll(getFeatures());
+        }};
+
+        new ArtistDimension(playlist) {{
+            all.addAll(getFeatures());
+        }};
+
+        new AlbumDimension(playlist) {{
+            all.addAll(getFeatures());
+        }};
+
+        return all;
     }
 
     @Override
-    public int user2uidx(AnyPlaylist playlist) {
-        return playlist.getId();
+    public int user2uidx(Integer playlistId) {
+        return playlistId;
     }
 
     @Override
@@ -100,8 +93,8 @@ public class PlaylistFeatureIndex
     }
 
     @Override
-    public AnyPlaylist uidx2user(int uidx) {
-        return playlists.get(uidx);
+    public Integer uidx2user(int uidx) {
+        return uidx;
     }
 
     @Override
@@ -111,7 +104,7 @@ public class PlaylistFeatureIndex
 
     @Override
     public int numUsers() {
-        return playlists.size();
+        return featuresByPlaylist.size();
     }
 
     @Override

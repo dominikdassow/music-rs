@@ -36,7 +36,7 @@ public class MusicRsApplication
     public void run(String... args) throws Exception {
         log.info("MusicRsApplication: " + Arrays.toString(args));
 
-        database.init();
-        // recommendations.run();
+        // database.init();
+        recommendations.run();
     }
 }

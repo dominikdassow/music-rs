@@ -24,7 +24,9 @@ public class RecommendationService {
     private SimilarPlaylistsEngine similarPlaylistsEngine;
 
     public void run() {
-        List<AnyPlaylist> similarPlaylists = similarPlaylistsEngine.getResults(123); // TODO
+        List<AnyPlaylist> similarPlaylists = similarPlaylistsEngine.getResults(123, 5); // TODO
+
+        similarPlaylists.forEach(playlist -> log.info("[" + playlist.getId() + "] " + playlist.getName()));
 
         // final ChallengePlaylist playlist = challengeSetRepository.findById(1000020).orElseThrow();
 

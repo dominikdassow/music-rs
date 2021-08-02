@@ -1,7 +1,6 @@
 package de.dominikdassow.musicrs.recommender.data;
 
-import de.dominikdassow.musicrs.model.AnyPlaylist;
-import de.dominikdassow.musicrs.model.PlaylistFeature;
+import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.recommender.index.PlaylistFeatureIndex;
 import es.uam.eps.ir.ranksys.fast.preference.IdxPref;
 import org.ranksys.fast.preference.StreamsAbstractFastPreferenceData;
@@ -10,7 +9,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class PlaylistsFeaturesData
-    extends StreamsAbstractFastPreferenceData<AnyPlaylist, PlaylistFeature> {
+    extends StreamsAbstractFastPreferenceData<Integer, PlaylistFeature> {
 
     private final PlaylistFeatureIndex index;
 
@@ -22,8 +21,7 @@ public class PlaylistsFeaturesData
 
     @Override
     public int numUsers(int iidx) {
-        return Math.toIntExact(index.getPlaylistFeatures().values().stream()
-            .filter(playlistFeature -> playlistFeature.getId().equals(iidx)).count());
+        return index.getPlaylistsByFeature().get(iidx).size();
     }
 
     @Override
@@ -46,6 +44,7 @@ public class PlaylistsFeaturesData
         if (!index.getFeaturesByPlaylist().containsKey(uidx)) return Stream.empty();
 
         return index.getFeaturesByPlaylist().get(uidx).stream()
+            .map(index::iidx2item)
             .map(playlistFeature -> new IdxPref(playlistFeature.getId(), playlistFeature.getValue()));
     }
 
@@ -54,12 +53,13 @@ public class PlaylistsFeaturesData
         if (!index.getPlaylistsByFeature().containsKey(iidx)) return Stream.empty();
 
         return index.getPlaylistsByFeature().get(iidx).stream()
-            .map(playlist -> new IdxPref(playlist.getId(), index.getFeaturesByPlaylist().get(playlist.getId()).stream()
-                .filter(playlistFeature -> playlistFeature.getId().equals(iidx)).count()));
+            .map(playlistId -> new IdxPref(playlistId,
+                index.getFeaturesByPlaylist().get(playlistId).stream()
+                    .filter(playlistFeatureId -> playlistFeatureId.equals(iidx)).count()));
     }
 
     @Override
     public int numPreferences() {
-        return index.getPlaylistFeatures().size() + index.getPlaylistsByFeature().size();
+        return index.numItems() * 2;
     }
 }
