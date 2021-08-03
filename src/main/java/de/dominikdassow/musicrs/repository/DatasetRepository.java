@@ -18,7 +18,13 @@ public interface DatasetRepository
 
     @Aggregation({
         "{ $match: { _id: ?0 } }",
-        "{ $project: { total: { $size: { $objectToArray: '$tracks' } } } }"
+        "{ $project: { total: { $size: { $objectToArray: '$tracks' } } } }",
     })
     Integer countTracksById(Integer id);
+
+    @Aggregation({
+        "{ $match: { _id: ?0 } }",
+        "{ $project: { unique: { $size: { $setDifference: [ { $map: { input: { $objectToArray: '$tracks' }, as: 't', in: '$$t.v.$id' } }, [] ] } } } }",
+    })
+    Integer countUniqueTracksById(Integer id);
 }

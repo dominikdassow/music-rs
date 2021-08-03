@@ -13,6 +13,7 @@ import org.uma.jmetal.problem.permutationproblem.PermutationProblem;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 public class MusicPlaylistContinuationProblem
@@ -71,9 +72,9 @@ public class MusicPlaylistContinuationProblem
 
     private List<Track> getCandidateTracks() {
         if (candidateTracks == null) {
-            candidateTracks = new ArrayList<>() {{
+            candidateTracks = new ArrayList<>(new HashSet<>() {{
                 similarPlaylists.forEach(playlist -> addAll(playlist.getTracks().values()));
-            }};
+            }});
         }
 
         return candidateTracks;

@@ -1,6 +1,6 @@
 package de.dominikdassow.musicrs.recommender.engine;
 
-import de.dominikdassow.musicrs.model.AnyPlaylist;
+import de.dominikdassow.musicrs.model.DatasetPlaylist;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.recommender.data.PlaylistsFeaturesData;
 import de.dominikdassow.musicrs.recommender.index.PlaylistFeatureIndex;
@@ -41,12 +41,12 @@ public class SimilarPlaylistsEngine {
         similarity = new SetCosineUserSimilarity<>(data, 0.5, true);
     }
 
-    public List<AnyPlaylist> getResults(Integer id, int numberOfTracks) {
+    public List<DatasetPlaylist> getResults(Integer id, int minNumberOfTracks) {
         UserNeighborhood<Integer> neighborhood = new DynamicTopKUserNeighborhood<>(similarity,
             neighbor -> datasetRepository.existsById(neighbor.v1),
             neighbors -> neighbors.stream().reduce(0,
-                (sum, neighbor) -> sum + datasetRepository.countTracksById(neighbor.v1),
-                Integer::sum) >= numberOfTracks);
+                (sum, neighbor) -> sum + datasetRepository.countUniqueTracksById(neighbor.v1),
+                Integer::sum) >= minNumberOfTracks);
 
         return neighborhood.getNeighbors(id)
             .sorted(Comparator.comparingDouble(result -> (-result.v2)))
