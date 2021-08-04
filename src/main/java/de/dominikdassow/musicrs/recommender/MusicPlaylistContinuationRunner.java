@@ -9,14 +9,13 @@ import de.dominikdassow.musicrs.recommender.solution.MusicPlaylistSolution;
 import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.algorithm.Algorithm;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder;
-import org.uma.jmetal.example.AlgorithmRunner;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.operator.mutation.MutationOperator;
 import org.uma.jmetal.operator.selection.SelectionOperator;
 import org.uma.jmetal.util.AbstractAlgorithmRunner;
+import org.uma.jmetal.util.JMetalException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public abstract class MusicPlaylistContinuationRunner
@@ -33,12 +32,12 @@ public abstract class MusicPlaylistContinuationRunner
     public void run() {
         Algorithm<List<MusicPlaylistSolution>> algorithm = getAlgorithm();
 
-        AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
+        long computingTime = execute(algorithm);
 
         List<MusicPlaylistSolution> population = algorithm.getResult();
 
         log.info("ALGORITHM: " + algorithm.getName());
-        log.info("> TIME: " + algorithmRunner.getComputingTime());
+        log.info("> TIME: " + computingTime);
         log.info("> POPULATION SIZE: " + population.size());
 
         List<Track> result = population.get(0).getVariables();
@@ -75,5 +74,20 @@ public abstract class MusicPlaylistContinuationRunner
                 .setMaxEvaluations(MAX_EVALUATIONS)
                 .build();
         }
+    }
+
+    private long execute(Algorithm<?> algorithm) {
+        long start = System.currentTimeMillis();
+
+        Thread thread = new Thread(algorithm);
+        thread.start();
+
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            throw new JMetalException("Error in thread.join()", e);
+        }
+
+        return System.currentTimeMillis() - start;
     }
 }
