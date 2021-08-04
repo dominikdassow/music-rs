@@ -118,7 +118,7 @@ public class PlaylistFeatureIndex
 
     @Override
     public int numUsers() {
-        return lastPlaylistId - 1;
+        return lastPlaylistId + 1;
     }
 
     @Override

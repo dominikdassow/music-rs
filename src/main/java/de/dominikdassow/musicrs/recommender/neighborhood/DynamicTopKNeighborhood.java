@@ -34,7 +34,7 @@ public class DynamicTopKNeighborhood
     public Stream<Tuple2id> getNeighbors(int idx) {
         List<Tuple2id> neighbors = new ArrayList<>(0);
 
-        int k = 1; // TODO
+        int k = 2;
         boolean accepted = false;
 
         while (!accepted) {
