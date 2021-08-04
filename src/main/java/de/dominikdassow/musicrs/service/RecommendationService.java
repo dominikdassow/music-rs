@@ -1,18 +1,17 @@
 package de.dominikdassow.musicrs.service;
 
-import de.dominikdassow.musicrs.model.AnyPlaylist;
 import de.dominikdassow.musicrs.model.ChallengePlaylist;
-import de.dominikdassow.musicrs.model.DatasetPlaylist;
+import de.dominikdassow.musicrs.model.playlist.SimilarPlaylist;
+import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationRunner;
 import de.dominikdassow.musicrs.recommender.engine.SimilarPlaylistsEngine;
+import de.dominikdassow.musicrs.recommender.problem.MusicPlaylistContinuationProblem;
 import de.dominikdassow.musicrs.repository.ChallengeSetRepository;
 import de.dominikdassow.musicrs.repository.DatasetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
 
 @Component
 @Slf4j
@@ -31,23 +30,17 @@ public class RecommendationService {
     public void run() {
         similarPlaylistsEngine.init(); // TODO
 
-        IntStream.of(123, 3_001, 1_000_020).forEach(id -> {
-            log.info("> PLAYLIST :: " + id);
+        final ChallengePlaylist playlist
+            = challengeSetRepository.findById(1_000_020).orElseThrow();
 
-            List<AnyPlaylist> similarPlaylists = similarPlaylistsEngine.getResults(id, 500); // TODO
+        final List<SimilarPlaylist> similarPlaylists
+            = similarPlaylistsEngine.getResults(playlist.getId(), 500);
 
-            similarPlaylists.forEach(playlist -> log.info("[" + playlist.getId() + "] " + playlist.getName()));
-        });
+        log.info("# SIMILAR PLAYLISTS: " + similarPlaylists.size());
 
-        // final ChallengePlaylist playlist = challengeSetRepository.findById(1000020).orElseThrow();
+        final MusicPlaylistContinuationProblem problem
+            = new MusicPlaylistContinuationProblem(playlist, similarPlaylists);
 
-        // final MusicPlaylistContinuationProblem problem
-        //    = new MusicPlaylistContinuationProblem(playlist, getSimilarPlaylistsFor(playlist));
-
-        // new MusicPlaylistContinuationRunner.NSGAII(problem).run();
-    }
-
-    private List<DatasetPlaylist> getSimilarPlaylistsFor(ChallengePlaylist playlist) {
-        return new ArrayList<>(); // TODO
+        new MusicPlaylistContinuationRunner.NSGAII(problem).run();
     }
 }

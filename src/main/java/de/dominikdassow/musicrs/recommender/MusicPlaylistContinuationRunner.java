@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.recommender;
 
+import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.recommender.operator.ga.MusicPlaylistCrossover;
 import de.dominikdassow.musicrs.recommender.operator.ga.MusicPlaylistMutation;
 import de.dominikdassow.musicrs.recommender.operator.ga.MusicPlaylistSelection;
@@ -15,6 +16,7 @@ import org.uma.jmetal.operator.selection.SelectionOperator;
 import org.uma.jmetal.util.AbstractAlgorithmRunner;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public abstract class MusicPlaylistContinuationRunner
@@ -39,11 +41,11 @@ public abstract class MusicPlaylistContinuationRunner
         log.info("> TIME: " + algorithmRunner.getComputingTime());
         log.info("> POPULATION SIZE: " + population.size());
 
-        for (int i = 0; i < population.size(); i++) {
-            log.info(">> POPULATION " + (i + 1));
-            population.get(i).getVariables()
-                .forEach(track -> log.info(">>> " + track.getUri()));
-        }
+        List<Track> result = population.get(0).getVariables();
+
+        log.info(">> 1st RESULT SIZE: " + result.size());
+        result.forEach(track ->
+            System.out.println(">>> [" + track.getId() + "] " + track.getUri() + " -> " + track.getName()));
     }
 
     public static class NSGAII

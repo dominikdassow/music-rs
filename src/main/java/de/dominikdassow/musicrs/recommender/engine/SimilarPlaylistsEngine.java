@@ -2,6 +2,7 @@ package de.dominikdassow.musicrs.recommender.engine;
 
 import de.dominikdassow.musicrs.model.DatasetPlaylist;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
+import de.dominikdassow.musicrs.model.playlist.SimilarPlaylist;
 import de.dominikdassow.musicrs.recommender.data.PlaylistsFeaturesData;
 import de.dominikdassow.musicrs.recommender.index.PlaylistFeatureIndex;
 import de.dominikdassow.musicrs.recommender.neighborhood.user.DynamicTopKUserNeighborhood;
@@ -11,12 +12,14 @@ import es.uam.eps.ir.ranksys.nn.user.neighborhood.UserNeighborhood;
 import es.uam.eps.ir.ranksys.nn.user.sim.SetCosineUserSimilarity;
 import es.uam.eps.ir.ranksys.nn.user.sim.UserSimilarity;
 import lombok.extern.slf4j.Slf4j;
+import org.ranksys.core.util.tuples.Tuple2id;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Component
@@ -41,18 +44,32 @@ public class SimilarPlaylistsEngine {
         similarity = new SetCosineUserSimilarity<>(data, 0.5, true);
     }
 
-    public List<DatasetPlaylist> getResults(Integer id, int minNumberOfTracks) {
+    public List<SimilarPlaylist> getResults(Integer id, int minNumberOfTracks) {
         UserNeighborhood<Integer> neighborhood = new DynamicTopKUserNeighborhood<>(similarity,
-            neighbor -> datasetRepository.existsById(neighbor.v1),
-            neighbors -> neighbors.stream().reduce(0,
-                (sum, neighbor) -> sum + datasetRepository.countUniqueTracksById(neighbor.v1),
-                Integer::sum) >= minNumberOfTracks);
+            // TODO: Check statically?
+            neighbor -> datasetRepository.existsById(playlistFeatureIndex.uidx2user(neighbor.v1)),
+            neighbors -> {
+                final List<Integer> ids
+                    = neighbors.stream().map(Tuple2id::v1).collect(Collectors.toList());
+
+                if (ids.isEmpty()) return false;
+
+                return datasetRepository.countUniqueTracksByIds(ids) >= minNumberOfTracks;
+            });
+
+        AtomicInteger numberOfTracks = new AtomicInteger();
 
         return neighborhood.getNeighbors(id)
-            .sorted(Comparator.comparingDouble(result -> (-result.v2)))
-            .map(result -> playlistFeatureIndex.uidx2user(result.v1))
-            .map(playlistId -> datasetRepository.findById(playlistId).orElse(null)) // TODO
+            .map(result -> {
+                DatasetPlaylist playlist
+                    = datasetRepository.findById(playlistFeatureIndex.uidx2user(result.v1)).orElse(null);
+
+                if (playlist == null) return null;
+
+                return new SimilarPlaylist(playlist, result.v2);
+            })
             .filter(Objects::nonNull)
+            .sorted(Comparator.comparingDouble(SimilarPlaylist::getSimilarity).reversed())
             .collect(Collectors.toList());
     }
 }
