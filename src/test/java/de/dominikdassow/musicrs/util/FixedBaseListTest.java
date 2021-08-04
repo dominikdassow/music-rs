@@ -14,7 +14,7 @@ public class FixedBaseListTest {
     public void testEmpty() {
         FixedBaseList<String> list = new FixedBaseList<>();
 
-        assertEquals(list.values(), Lists.emptyList());
+        assertEquals(Lists.emptyList(), list.values());
     }
 
     @Test
@@ -24,7 +24,7 @@ public class FixedBaseListTest {
             put(1, "B");
         }});
 
-        assertEquals(list.values(), Lists.list("A", "B"));
+        assertEquals(Lists.list("A", "B"), list.values());
     }
 
     @Test
@@ -34,7 +34,7 @@ public class FixedBaseListTest {
             put(2, "B");
         }});
 
-        assertEquals(list.toString(), "[A, B]");
+        assertEquals("[A, B]", list.toString());
     }
 
     @Test
@@ -46,7 +46,7 @@ public class FixedBaseListTest {
 
         list.add("C");
 
-        assertEquals(list.values(), Lists.list("A", "B", "C"));
+        assertEquals(Lists.list("A", "B", "C"), list.values());
     }
 
     @Test
@@ -58,7 +58,7 @@ public class FixedBaseListTest {
 
         list.add("C");
 
-        assertEquals(list.values(), Lists.list("C", "A", "B"));
+        assertEquals(Lists.list("C", "A", "B"), list.values());
     }
 
     @Test
@@ -70,7 +70,7 @@ public class FixedBaseListTest {
 
         list.add("C");
 
-        assertEquals(list.values(), Lists.list("A", "C", "B"));
+        assertEquals(Lists.list("A", "C", "B"), list.values());
     }
 
     @Test
@@ -82,15 +82,15 @@ public class FixedBaseListTest {
 
         list.add("C");
 
-        assertEquals(list.values(), Lists.list("A", "C", "B"));
+        assertEquals(Lists.list("A", "C", "B"), list.values());
 
         list.reset();
 
-        assertEquals(list.values(), Lists.list("A", "B"));
+        assertEquals(Lists.list("A", "B"), list.values());
 
         list.add("C");
 
-        assertEquals(list.values(), Lists.list("A", "C", "B"));
+        assertEquals(Lists.list("A", "C", "B"), list.values());
     }
 
     @Test
