@@ -16,6 +16,23 @@ public class AccuracyObjective
 
     @Override
     public double evaluate(List<Track> tracks) {
-        return 0; // TODO
+        double fitness = 0.0;
+
+        final double numberOfPlaylists = similarPlaylists.size();
+        final double numberOfTracks = tracks.size();
+
+        for (int i = 1; i <= tracks.size(); i++) {
+            final Track track = tracks.get(i - 1);
+
+            for (int j = 1; j <= similarPlaylists.size(); j++) {
+                final SimilarPlaylist playlist = similarPlaylists.get(j - 1);
+
+                if (playlist.getTracks().containsValue(track)) {
+                    fitness += (numberOfTracks / i) * (numberOfPlaylists / j) * playlist.getSimilarity();
+                }
+            }
+        }
+
+        return fitness;
     }
 }
