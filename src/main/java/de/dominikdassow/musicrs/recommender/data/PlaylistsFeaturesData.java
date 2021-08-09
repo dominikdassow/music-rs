@@ -1,6 +1,5 @@
 package de.dominikdassow.musicrs.recommender.data;
 
-import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.recommender.index.PlaylistFeatureIndex;
 import es.uam.eps.ir.ranksys.fast.preference.IdxPref;
 import org.ranksys.fast.preference.StreamsAbstractFastPreferenceData;
@@ -9,14 +8,14 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class PlaylistsFeaturesData
-    extends StreamsAbstractFastPreferenceData<Integer, PlaylistFeature> {
+    extends StreamsAbstractFastPreferenceData<Integer, Integer> {
 
     private final PlaylistFeatureIndex index;
 
-    public PlaylistsFeaturesData(PlaylistFeatureIndex playlistFeatureIndex) {
-        super(playlistFeatureIndex, playlistFeatureIndex);
+    public PlaylistsFeaturesData(PlaylistFeatureIndex index) {
+        super(index, index);
 
-        this.index = playlistFeatureIndex;
+        this.index = index;
     }
 
     @Override
@@ -48,8 +47,8 @@ public class PlaylistsFeaturesData
         if (!index.getFeaturesByPlaylist().containsKey(uidx)) return Stream.empty();
 
         return index.getFeaturesByPlaylist().get(uidx).stream()
-            .map(index::iidx2item)
-            .map(playlistFeature -> new IdxPref(playlistFeature.getId(), playlistFeature.getValue()));
+            .map(playlistFeatureId -> new IdxPref(playlistFeatureId,
+                index.getPlaylistFeatureValues().get(playlistFeatureId)));
     }
 
     @Override

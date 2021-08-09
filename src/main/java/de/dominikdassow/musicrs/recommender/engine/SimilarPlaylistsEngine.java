@@ -3,7 +3,6 @@ package de.dominikdassow.musicrs.recommender.engine;
 import de.dominikdassow.musicrs.model.AnyDocument;
 import de.dominikdassow.musicrs.model.AnyPlaylist;
 import de.dominikdassow.musicrs.model.DatasetPlaylist;
-import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.model.playlist.SimilarPlaylist;
 import de.dominikdassow.musicrs.recommender.data.PlaylistsFeaturesData;
 import de.dominikdassow.musicrs.recommender.index.PlaylistFeatureIndex;
@@ -36,7 +35,7 @@ public class SimilarPlaylistsEngine {
     @Autowired
     private PlaylistFeatureIndex playlistFeatureIndex;
 
-    private FastPreferenceData<Integer, PlaylistFeature> data;
+    private FastPreferenceData<Integer, Integer> data;
 
     private UserSimilarity<Integer> similarity;
 

@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 @Slf4j
 @SuppressWarnings("unused")
 public class PlaylistFeatureIndex
-    implements FastUserIndex<Integer>, FastItemIndex<PlaylistFeature> {
+    implements FastUserIndex<Integer>, FastItemIndex<Integer> {
 
     @Autowired
     private DatasetRepository datasetRepository;
@@ -36,7 +36,7 @@ public class PlaylistFeatureIndex
     private ChallengeSetRepository challengeSetRepository;
 
     @Getter
-    private final ConcurrentMap<Integer, PlaylistFeature> playlistFeatures = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, Double> playlistFeatureValues = new ConcurrentHashMap<>();
 
     @Getter
     private final ConcurrentMap<Integer, List<Integer>> featuresByPlaylist = new ConcurrentHashMap<>();
@@ -50,7 +50,7 @@ public class PlaylistFeatureIndex
         log.info("PlaylistFeatureIndex::init()");
         log.info("> EXCLUDE: " + excluded.stream().map(AnyDocument::getId).collect(Collectors.toList()));
 
-        playlistFeatures.clear();
+        playlistFeatureValues.clear();
         featuresByPlaylist.clear();
         playlistsByFeature.clear();
 
@@ -95,7 +95,7 @@ public class PlaylistFeatureIndex
         featuresByPlaylist.put(id, new ArrayList<>());
 
         features.forEach(playlistFeature -> {
-            playlistFeatures.putIfAbsent(playlistFeature.getId(), playlistFeature);
+            playlistFeatureValues.putIfAbsent(playlistFeature.getId(), playlistFeature.getValue());
 
             featuresByPlaylist.get(id).add(playlistFeature.getId());
 
@@ -110,8 +110,8 @@ public class PlaylistFeatureIndex
     }
 
     @Override
-    public int item2iidx(PlaylistFeature playlistFeature) {
-        return playlistFeature.getId();
+    public int item2iidx(Integer playlistFeatureId) {
+        return playlistFeatureId;
     }
 
     @Override
@@ -120,8 +120,8 @@ public class PlaylistFeatureIndex
     }
 
     @Override
-    public PlaylistFeature iidx2item(int iidx) {
-        return playlistFeatures.get(iidx);
+    public Integer iidx2item(int iidx) {
+        return iidx;
     }
 
     @Override
@@ -131,6 +131,6 @@ public class PlaylistFeatureIndex
 
     @Override
     public int numItems() {
-        return playlistFeatures.size();
+        return playlistFeatureValues.size();
     }
 }
