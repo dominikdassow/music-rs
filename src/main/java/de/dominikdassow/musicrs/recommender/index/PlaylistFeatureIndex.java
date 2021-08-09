@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.recommender.index;
 
+import de.dominikdassow.musicrs.model.AnyDocument;
 import de.dominikdassow.musicrs.model.AnyPlaylist;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.recommender.feature.playlist.AlbumDimension;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -44,8 +46,9 @@ public class PlaylistFeatureIndex
 
     private Integer lastPlaylistId = 0;
 
-    public void init() {
+    public void init(List<AnyPlaylist> excluded) {
         log.info("PlaylistFeatureIndex::init()");
+        log.info("> EXCLUDE: " + excluded.stream().map(AnyDocument::getId).collect(Collectors.toList()));
 
         playlistFeatures.clear();
         featuresByPlaylist.clear();
@@ -57,18 +60,10 @@ public class PlaylistFeatureIndex
         Stream.concat(
             challengeSetRepository.streamAllWithIdAndFeatures(),
             datasetRepository.streamAllWithIdAndFeatures().limit(10_000)
-        ).parallel().forEach(playlist -> {
-            featuresByPlaylist.put(playlist.getId(), new ArrayList<>());
+        ).parallel().forEach(playlist -> addToIndex(playlist.getId(), playlist.getFeatures()));
 
-            playlist.getFeatures().forEach(playlistFeature -> {
-                playlistFeatures.putIfAbsent(playlistFeature.getId(), playlistFeature);
-
-                featuresByPlaylist.get(playlist.getId()).add(playlistFeature.getId());
-
-                playlistsByFeature.putIfAbsent(playlistFeature.getId(), new ArrayList<>());
-                playlistsByFeature.get(playlistFeature.getId()).add(playlist.getId());
-            });
-        });
+        // TODO: Use playlist.getFeatures() instead of generateFor ?
+        excluded.forEach(playlist -> addToIndex(playlist.getId(), generateFor(playlist)));
 
         timer.stop();
         log.info("PlaylistFeatureIndex::init() -> " + timer.getTotalTimeSeconds());
@@ -94,6 +89,19 @@ public class PlaylistFeatureIndex
         }};
 
         return all;
+    }
+
+    private void addToIndex(Integer id, List<PlaylistFeature> features) {
+        featuresByPlaylist.put(id, new ArrayList<>());
+
+        features.forEach(playlistFeature -> {
+            playlistFeatures.putIfAbsent(playlistFeature.getId(), playlistFeature);
+
+            featuresByPlaylist.get(id).add(playlistFeature.getId());
+
+            playlistsByFeature.putIfAbsent(playlistFeature.getId(), new ArrayList<>());
+            playlistsByFeature.get(playlistFeature.getId()).add(id);
+        });
     }
 
     @Override

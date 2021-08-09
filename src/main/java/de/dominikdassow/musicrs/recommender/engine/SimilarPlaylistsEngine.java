@@ -1,5 +1,7 @@
 package de.dominikdassow.musicrs.recommender.engine;
 
+import de.dominikdassow.musicrs.model.AnyDocument;
+import de.dominikdassow.musicrs.model.AnyPlaylist;
 import de.dominikdassow.musicrs.model.DatasetPlaylist;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.model.playlist.SimilarPlaylist;
@@ -16,6 +18,7 @@ import org.ranksys.core.util.tuples.Tuple2id;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -37,17 +40,26 @@ public class SimilarPlaylistsEngine {
 
     private UserSimilarity<Integer> similarity;
 
+    private List<Integer> excludedIds;
+
     public void init() {
-        playlistFeatureIndex.init(); // TODO
+        init(new ArrayList<>());
+    }
+
+    public void init(List<AnyPlaylist> excluded) {
+        this.excludedIds = excluded.stream().map(AnyDocument::getId).collect(Collectors.toList());
+
+        playlistFeatureIndex.init(excluded); // TODO
 
         data = new PlaylistsFeaturesData(playlistFeatureIndex);
         similarity = new SetCosineUserSimilarity<>(data, 0.5, true);
     }
 
-    public List<SimilarPlaylist> getResults(Integer id, int minNumberOfTracks) {
+    public List<SimilarPlaylist> getResults(AnyPlaylist playlist, int minNumberOfTracks) {
         UserNeighborhood<Integer> neighborhood = new DynamicTopKUserNeighborhood<>(similarity,
             // TODO: Check statically?
-            neighbor -> datasetRepository.existsById(playlistFeatureIndex.uidx2user(neighbor.v1)),
+            neighbor -> !excludedIds.contains(neighbor.v1) &&
+                datasetRepository.existsById(playlistFeatureIndex.uidx2user(neighbor.v1)),
             neighbors -> {
                 final List<Integer> ids
                     = neighbors.stream().map(Tuple2id::v1).collect(Collectors.toList());
@@ -59,14 +71,14 @@ public class SimilarPlaylistsEngine {
 
         AtomicInteger numberOfTracks = new AtomicInteger();
 
-        return neighborhood.getNeighbors(id)
+        return neighborhood.getNeighbors(playlist.getId())
             .map(result -> {
-                DatasetPlaylist playlist
+                DatasetPlaylist foundPlaylist
                     = datasetRepository.findById(playlistFeatureIndex.uidx2user(result.v1)).orElse(null);
 
-                if (playlist == null) return null;
+                if (foundPlaylist == null) return null;
 
-                return new SimilarPlaylist(playlist, result.v2);
+                return new SimilarPlaylist(foundPlaylist, result.v2);
             })
             .filter(Objects::nonNull)
             .sorted(Comparator.comparingDouble(SimilarPlaylist::getSimilarity).reversed())

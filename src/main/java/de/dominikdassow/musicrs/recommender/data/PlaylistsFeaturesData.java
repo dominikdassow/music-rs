@@ -21,11 +21,15 @@ public class PlaylistsFeaturesData
 
     @Override
     public int numUsers(int iidx) {
+        if (!index.getPlaylistsByFeature().containsKey(iidx)) return 0;
+
         return index.getPlaylistsByFeature().get(iidx).size();
     }
 
     @Override
     public int numItems(int uidx) {
+        if (!index.getFeaturesByPlaylist().containsKey(uidx)) return 0;
+
         return index.getFeaturesByPlaylist().get(uidx).size();
     }
 

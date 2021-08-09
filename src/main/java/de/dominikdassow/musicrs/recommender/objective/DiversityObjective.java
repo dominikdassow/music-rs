@@ -1,7 +1,5 @@
 package de.dominikdassow.musicrs.recommender.objective;
 
-import de.dominikdassow.musicrs.model.Track;
-
 import java.util.List;
 
 public class DiversityObjective
@@ -11,7 +9,7 @@ public class DiversityObjective
     }
 
     @Override
-    public double evaluate(List<Track> tracks) {
+    public double evaluate(List<Integer> tracks) {
         return 0; // TODO
     }
 }

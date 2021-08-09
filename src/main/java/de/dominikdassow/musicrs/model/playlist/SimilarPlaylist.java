@@ -37,4 +37,9 @@ public class SimilarPlaylist
     public List<PlaylistFeature> getFeatures() {
         return playlist.getFeatures();
     }
+
+    public boolean containsTrack(Integer id) {
+        return playlist.getTracks().values().stream()
+            .anyMatch(track -> track.getId().equals(id));
+    }
 }

@@ -1,6 +1,7 @@
 package de.dominikdassow.musicrs.service;
 
 import de.dominikdassow.musicrs.model.ChallengePlaylist;
+import de.dominikdassow.musicrs.model.DatasetPlaylist;
 import de.dominikdassow.musicrs.model.playlist.SimilarPlaylist;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationRunner;
 import de.dominikdassow.musicrs.recommender.engine.SimilarPlaylistsEngine;
@@ -28,13 +29,13 @@ public class RecommendationService {
     private SimilarPlaylistsEngine similarPlaylistsEngine;
 
     public void run() {
-        similarPlaylistsEngine.init(); // TODO
+        final DatasetPlaylist playlist
+            = datasetRepository.findById(90).orElseThrow();
 
-        final ChallengePlaylist playlist
-            = challengeSetRepository.findById(1_000_020).orElseThrow();
+        similarPlaylistsEngine.init(List.of(playlist)); // TODO
 
         final List<SimilarPlaylist> similarPlaylists
-            = similarPlaylistsEngine.getResults(playlist.getId(), 500);
+            = similarPlaylistsEngine.getResults(playlist, 500);
 
         log.info("# SIMILAR PLAYLISTS: " + similarPlaylists.size());
 
