@@ -32,6 +32,7 @@ dependencies {
 	implementation "org.ranksys:RankSys-core:${rankSysVersion}"
 	implementation "org.ranksys:RankSys-fast:${rankSysVersion}"
 	implementation "org.ranksys:RankSys-nn:${rankSysVersion}"
+	implementation "org.ranksys:RankSys-novdiv:${rankSysVersion}"
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

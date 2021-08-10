@@ -1,10 +1,16 @@
 package de.dominikdassow.musicrs.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
+import de.dominikdassow.musicrs.model.feature.TrackFeature;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -38,4 +44,11 @@ public class Track
 
     @JsonProperty("duration_ms")
     private Integer duration;
+
+    public List<TrackFeature> getFeatures() {
+        return List.of(
+            new TrackFeature(TrackFeature.Dimension.ARTIST, artistUri),
+            new TrackFeature(TrackFeature.Dimension.ALBUM, albumUri)
+        );
+    }
 }

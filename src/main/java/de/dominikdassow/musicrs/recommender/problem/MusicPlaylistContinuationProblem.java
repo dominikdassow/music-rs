@@ -3,6 +3,8 @@ package de.dominikdassow.musicrs.recommender.problem;
 import de.dominikdassow.musicrs.model.AnyPlaylist;
 import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.playlist.SimilarPlaylist;
+import de.dominikdassow.musicrs.recommender.data.TracksFeaturesData;
+import de.dominikdassow.musicrs.recommender.index.TrackFeatureIndex;
 import de.dominikdassow.musicrs.recommender.objective.AccuracyObjective;
 import de.dominikdassow.musicrs.recommender.objective.DiversityObjective;
 import de.dominikdassow.musicrs.recommender.objective.NoveltyObjective;
@@ -22,18 +24,12 @@ public class MusicPlaylistContinuationProblem
     extends AbstractGenericProblem<PermutationSolution<Integer>>
     implements PermutationProblem<PermutationSolution<Integer>> {
 
-    private final List<Objective> objectives;
-
     private final FixedBaseList<Integer> solutionTracks;
     private final List<Track> candidateTracks;
 
-    public MusicPlaylistContinuationProblem(AnyPlaylist playlist, List<SimilarPlaylist> similarPlaylists) {
-        objectives = Arrays.asList(
-            new AccuracyObjective(similarPlaylists),
-            new NoveltyObjective(similarPlaylists),
-            new DiversityObjective()
-        );
+    private final List<Objective> objectives;
 
+    public MusicPlaylistContinuationProblem(AnyPlaylist playlist, List<SimilarPlaylist> similarPlaylists) {
         solutionTracks = new FixedBaseList<>(new HashMap<>() {{
             for (Map.Entry<Integer, Track> entry : playlist.getTracks().entrySet()) {
                 put(Integer.valueOf(String.valueOf(entry.getKey())), entry.getValue().getId());
@@ -43,6 +39,17 @@ public class MusicPlaylistContinuationProblem
         candidateTracks = new ArrayList<>(new HashSet<>() {{
             similarPlaylists.forEach(playlist -> addAll(playlist.getTracks().values()));
         }});
+
+        TracksFeaturesData tracksFeaturesData = new TracksFeaturesData(new TrackFeatureIndex(new HashSet<>() {{
+            addAll(playlist.getTracks().values());
+            similarPlaylists.forEach(playlist -> addAll(playlist.getTracks().values()));
+        }}));
+
+        objectives = Arrays.asList(
+            new AccuracyObjective(similarPlaylists),
+            new NoveltyObjective(similarPlaylists),
+            new DiversityObjective(tracksFeaturesData)
+        );
 
         setNumberOfVariables(playlist.getTracks().size() + candidateTracks.size());
         setNumberOfObjectives(objectives.size());

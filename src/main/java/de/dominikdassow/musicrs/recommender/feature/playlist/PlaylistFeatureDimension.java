@@ -5,11 +5,10 @@ import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.recommender.feature.AbstractFeatureDimension;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 public abstract class PlaylistFeatureDimension<I>
-    extends AbstractFeatureDimension<I> {
+    extends AbstractFeatureDimension<I, PlaylistFeature> {
 
     protected AnyPlaylist playlist;
 
@@ -19,13 +18,12 @@ public abstract class PlaylistFeatureDimension<I>
         playlist.getTracks().values().forEach(track -> add(parseTrack(track)));
     }
 
-    public abstract PlaylistFeature.Dimension getDimension();
+    @Override
+    protected PlaylistFeature createFeature(Map.Entry<I, Double> entry) {
+        return new PlaylistFeature(getDimension(), entry.getKey().toString(), entry.getValue());
+    }
+
+    protected abstract PlaylistFeature.Dimension getDimension();
 
     protected abstract I parseTrack(Track track);
-
-    public List<PlaylistFeature> getFeatures() {
-        return values.entrySet().stream()
-            .map(entry -> new PlaylistFeature(getDimension(), entry.getKey().toString(), entry.getValue()))
-            .collect(Collectors.toList());
-    }
 }

@@ -40,12 +40,12 @@ public class EvaluationService {
         final DatasetPlaylist playlist
             = datasetRepository.findById(90).orElseThrow();
 
+        final List<Track> trackList = playlist.getTrackList();
+
         playlist.setTracks(new HashMap<>() {{
             IntStream.range(0, 25)
                 .forEach(i -> put(i, playlist.getTracks().get(String.valueOf(i)))); // TODO: Conversion issue
         }});
-
-        final List<Track> trackList = playlist.getTrackList();
 
         similarPlaylistsEngine.init(List.of(playlist)); // TODO
 

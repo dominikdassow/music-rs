@@ -17,7 +17,7 @@ public class AlbumDimension
     }
 
     @Override
-    public PlaylistFeature.Dimension getDimension() {
+    protected PlaylistFeature.Dimension getDimension() {
         return PlaylistFeature.Dimension.ALBUM;
     }
 
