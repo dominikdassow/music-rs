@@ -39,7 +39,7 @@ public class MusicPlaylistContinuationEvaluator {
         double trackLevel = recommendedTrackUris.stream().reduce(0.0,
             (sum, track) -> sum + (relevantTrackUris.contains(track) ? 1.0 : 0.0), Double::sum);
 
-        double artistLevel = recommendedArtistUris.stream().reduce(0.0,
+        double artistLevel = recommendedArtistUris.stream().distinct().reduce(0.0,
             (sum, artist) -> sum + (relevantArtistUris.contains(artist) ? 1.0 : 0.0), Double::sum);
 
         return (trackLevel + 0.25 * artistLevel) / numberOfRelevantTracks;

@@ -33,25 +33,25 @@ class MusicPlaylistContinuationEvaluatorTest {
             entry(Tuple.tuple(
                 List.of(makeOne(1, 10), makeOne(2, 11), makeOne(3, 12)),
                 List.of(makeOne(1, 13), makeOne(2, 14))
-            ), 2.0 / 3),
+            ), 2.0 / 3), // T:1;T:2
             entry(Tuple.tuple(
                 List.of(makeOne(1, 10), makeOne(2, 11)),
                 List.of(makeOne(1, 12), makeOne(2, 13), makeOne(3, 14))
-            ), 1.0),
+            ), 2.0 / 2), // T:1;T:2
 
             // Artist level
             entry(Tuple.tuple(
                 List.of(makeOne(1, 3), makeOne(2, 3), makeOne(3, 3)),
                 List.of(makeOne(4, 3), makeOne(5, 2))
-            ), 0.25 * 1 / 3),
+            ), 0.25 * 1 / 3), // A:3
             entry(Tuple.tuple(
                 List.of(make(1), make(2), make(3)),
                 List.of(makeOne(4, 1), makeOne(5, 1))
-            ), 0.25 * 2 / 3),
+            ), 0.25 * 1 / 3), // A:1
             entry(Tuple.tuple(
                 List.of(make(1), make(2)),
                 List.of(makeOne(3, 1), makeOne(4, 2))
-            ), 0.25 * 2 / 2),
+            ), 0.25 * 2 / 2), // A:1;A:2
 
             // Track + Artist level
             entry(Tuple.tuple(
@@ -61,11 +61,11 @@ class MusicPlaylistContinuationEvaluatorTest {
             entry(Tuple.tuple(
                 List.of(makeOne(1, 1), makeOne(2, 1), makeOne(3, 2)),
                 List.of(makeOne(3, 2), makeOne(4, 2))
-            ), (1 + 0.25 * 2) / 3),
+            ), (1 + 0.25 * 1) / 3), // T:3 + A:2
             entry(Tuple.tuple(
                 List.of(makeOne(1, 1), makeOne(2, 1), makeOne(3, 2)),
                 List.of(makeOne(1, 1), makeOne(2, 1), makeOne(3, 2), makeOne(4, 2))
-            ), (3 + 0.25 * 4) / 3)
+            ), (3 + 0.25 * 2) / 3) // T:1;T:2;T3 + A:1;A:2
         );
 
         test.forEach((n, expected) -> {
