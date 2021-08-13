@@ -1,17 +1,16 @@
 package de.dominikdassow.musicrs.recommender.objective;
 
-import de.dominikdassow.musicrs.model.playlist.SimilarPlaylist;
-import lombok.extern.slf4j.Slf4j;
+import de.dominikdassow.musicrs.model.SimilarTracksList;
 
 import java.util.List;
 
 public class NoveltyObjective
     implements Objective {
 
-    private final List<SimilarPlaylist> similarPlaylists;
+    private final List<SimilarTracksList> similarTracksLists;
 
-    public NoveltyObjective(List<SimilarPlaylist> similarPlaylists) {
-        this.similarPlaylists = similarPlaylists;
+    public NoveltyObjective(List<SimilarTracksList> similarTracksLists) {
+        this.similarTracksLists = similarTracksLists;
     }
 
     @Override
@@ -23,8 +22,8 @@ public class NoveltyObjective
         for (int i = 1; i <= tracks.size(); i++) {
             final Integer trackId = tracks.get(i - 1);
 
-            final long numberOfMatchingPlaylists = similarPlaylists.stream()
-                .filter(playlist -> playlist.containsTrack(trackId)).count();
+            final long numberOfMatchingPlaylists = similarTracksLists.stream()
+                .filter(playlist -> playlist.contains(trackId)).count();
 
             if (numberOfMatchingPlaylists > 0) {
                 fitness += (1.0 / numberOfMatchingPlaylists) * (numberOfTracks / i);

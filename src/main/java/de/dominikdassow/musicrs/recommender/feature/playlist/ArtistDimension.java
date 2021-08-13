@@ -1,13 +1,13 @@
 package de.dominikdassow.musicrs.recommender.feature.playlist;
 
-import de.dominikdassow.musicrs.model.AnyPlaylist;
+import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 
 public class ArtistDimension
     extends PlaylistFeatureDimension<String> {
 
-    public ArtistDimension(AnyPlaylist playlist) {
+    public ArtistDimension(Playlist playlist) {
         super(playlist);
     }
 

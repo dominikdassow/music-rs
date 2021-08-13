@@ -1,7 +1,6 @@
 package de.dominikdassow.musicrs.recommender.index;
 
-import de.dominikdassow.musicrs.model.AnyDocument;
-import de.dominikdassow.musicrs.model.AnyPlaylist;
+import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.recommender.feature.playlist.AlbumDimension;
 import de.dominikdassow.musicrs.recommender.feature.playlist.ArtistDimension;
@@ -18,6 +17,7 @@ import org.springframework.util.StopWatch;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -46,9 +46,11 @@ public class PlaylistFeatureIndex
 
     private Integer lastPlaylistId = 0;
 
-    public void init(List<AnyPlaylist> excluded) {
+    public void init(Set<Playlist> excluded) {
         log.info("PlaylistFeatureIndex::init()");
-        log.info("> EXCLUDE: " + excluded.stream().map(AnyDocument::getId).collect(Collectors.toList()));
+
+        List<Integer> excludedIds = excluded.stream().map(Playlist::getId).collect(Collectors.toList());
+        log.info("> EXCLUDE: " + excludedIds);
 
         playlistFeatureValues.clear();
         featuresByPlaylist.clear();
@@ -57,51 +59,32 @@ public class PlaylistFeatureIndex
         StopWatch timer = new StopWatch();
         timer.start();
 
-        Stream.concat(
-            challengeSetRepository.streamAllWithIdAndFeatures(),
-            datasetRepository.streamAllWithIdAndFeatures().limit(10_000)
-        ).parallel().forEach(playlist -> addToIndex(playlist.getId(), playlist.getFeatures()));
+        Stream.of(
+            challengeSetRepository.streamAllWithIdAndFeatures()
+                .filter(p -> !excludedIds.contains(p.getId())),
+            datasetRepository.streamAllWithIdAndFeatures()
+                .filter(p -> !excludedIds.contains(p.getId()))
+                .limit(10_000),
+            excluded.stream()
+        ).flatMap(s -> s).parallel().forEach(playlist -> {
+            featuresByPlaylist.put(playlist.getId(), new ArrayList<>());
 
-        // TODO: Use playlist.getFeatures() instead of generateFor ?
-        excluded.forEach(playlist -> addToIndex(playlist.getId(), generateFor(playlist)));
+            playlist.getFeatures().forEach(playlistFeature -> {
+                playlistFeatureValues.putIfAbsent(playlistFeature.getId(), playlistFeature.getValue());
 
-        timer.stop();
-        log.info("PlaylistFeatureIndex::init() -> " + timer.getTotalTimeSeconds());
+                featuresByPlaylist.get(playlist.getId()).add(playlistFeature.getId());
+
+                playlistsByFeature.putIfAbsent(playlistFeature.getId(), new ArrayList<>());
+                playlistsByFeature.get(playlistFeature.getId()).add(playlist.getId());
+            });
+        });
 
         featuresByPlaylist.keySet().forEach(playlistId -> {
             if (playlistId > lastPlaylistId) lastPlaylistId = playlistId;
         });
-    }
 
-    public static List<PlaylistFeature> generateFor(AnyPlaylist playlist) {
-        final List<PlaylistFeature> all = new ArrayList<>();
-
-        new TrackDimension(playlist) {{
-            all.addAll(getFeatures());
-        }};
-
-        new ArtistDimension(playlist) {{
-            all.addAll(getFeatures());
-        }};
-
-        new AlbumDimension(playlist) {{
-            all.addAll(getFeatures());
-        }};
-
-        return all;
-    }
-
-    private void addToIndex(Integer id, List<PlaylistFeature> features) {
-        featuresByPlaylist.put(id, new ArrayList<>());
-
-        features.forEach(playlistFeature -> {
-            playlistFeatureValues.putIfAbsent(playlistFeature.getId(), playlistFeature.getValue());
-
-            featuresByPlaylist.get(id).add(playlistFeature.getId());
-
-            playlistsByFeature.putIfAbsent(playlistFeature.getId(), new ArrayList<>());
-            playlistsByFeature.get(playlistFeature.getId()).add(id);
-        });
+        timer.stop();
+        log.info("PlaylistFeatureIndex::init() -> " + timer.getTotalTimeSeconds());
     }
 
     @Override

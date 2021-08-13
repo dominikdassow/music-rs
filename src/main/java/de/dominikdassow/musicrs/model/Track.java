@@ -1,23 +1,23 @@
 package de.dominikdassow.musicrs.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.model.feature.TrackFeature;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.With;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "tracks")
 public class Track
-    implements AnyDocument {
+    implements Identifiable {
 
     @Id
     @With
@@ -45,10 +45,19 @@ public class Track
     @JsonProperty("duration_ms")
     private Integer duration;
 
+    // TODO: Use generateFeatures() + Store in DB
     public List<TrackFeature> getFeatures() {
         return List.of(
             new TrackFeature(TrackFeature.Dimension.ARTIST, artistUri),
             new TrackFeature(TrackFeature.Dimension.ALBUM, albumUri)
         );
+    }
+
+    @Data
+    public static class WithIdAndUri {
+
+        private Integer id;
+
+        private String uri;
     }
 }

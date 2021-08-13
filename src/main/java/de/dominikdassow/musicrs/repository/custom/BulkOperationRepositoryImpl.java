@@ -1,6 +1,6 @@
 package de.dominikdassow.musicrs.repository.custom;
 
-import de.dominikdassow.musicrs.model.AnyDocument;
+import de.dominikdassow.musicrs.model.Identifiable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.BulkOperationException;
 import org.springframework.data.mongodb.core.BulkOperations;
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings("unused")
-public class BulkOperationRepositoryImpl<T extends AnyDocument>
+public class BulkOperationRepositoryImpl<T extends Identifiable>
     implements BulkOperationRepository<T> {
 
     @Autowired

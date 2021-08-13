@@ -1,8 +1,10 @@
 package de.dominikdassow.musicrs;
 
-import de.dominikdassow.musicrs.service.DatabaseService;
-import de.dominikdassow.musicrs.service.EvaluationService;
 import de.dominikdassow.musicrs.service.RecommendationService;
+import de.dominikdassow.musicrs.task.ImportChallengeSetTask;
+import de.dominikdassow.musicrs.task.ImportDatasetTask;
+import de.dominikdassow.musicrs.task.EvaluateSamplePlaylistsTask;
+import de.dominikdassow.musicrs.task.MakeRecommendationTask;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.Banner;
@@ -20,19 +22,23 @@ public class MusicRsApplication
     implements CommandLineRunner {
 
     @Autowired
-    private DatabaseService database;
+    private ImportDatasetTask importDatasetTask;
 
     @Autowired
-    private RecommendationService recommendations;
+    private ImportChallengeSetTask importChallengeSetTask;
 
     @Autowired
-    private EvaluationService evaluation;
+    private MakeRecommendationTask makeRecommendationTask;
+
+    @Autowired
+    private EvaluateSamplePlaylistsTask evaluateSamplePlaylistsTask;
 
     public static void main(String[] args) {
         new SpringApplicationBuilder(MusicRsApplication.class)
             .bannerMode(Banner.Mode.OFF)
             .web(WebApplicationType.NONE)
             .logStartupInfo(false)
+            .lazyInitialization(true)
             .run(args);
     }
 
@@ -40,8 +46,22 @@ public class MusicRsApplication
     public void run(String... args) throws Exception {
         log.info("MusicRsApplication: " + Arrays.toString(args));
 
-        // database.init();
-        // recommendations.run();
-        evaluation.run();
+//        importDatasetTask
+//            .rebuilding(false)
+//            .run();
+
+//        importChallengeSetTask
+//            .rebuilding(false)
+//            .run();
+
+//        makeRecommendationTask
+//            .forChallengePlaylists(1_000_800)
+//            .using(RecommendationService.AlgorithmType.NSGAII)
+//            .run();
+
+//        evaluateSamplePlaylistsTask
+//            .using(RecommendationService.AlgorithmType.NSGAII)
+//            .sampling(90)
+//            .run();
     }
 }

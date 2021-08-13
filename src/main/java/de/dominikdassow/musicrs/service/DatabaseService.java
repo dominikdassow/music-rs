@@ -1,27 +1,19 @@
 package de.dominikdassow.musicrs.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.dominikdassow.musicrs.model.ChallengePlaylist;
-import de.dominikdassow.musicrs.model.DatasetPlaylist;
 import de.dominikdassow.musicrs.model.Track;
-import de.dominikdassow.musicrs.recommender.index.PlaylistFeatureIndex;
+import de.dominikdassow.musicrs.model.playlist.ChallengePlaylist;
+import de.dominikdassow.musicrs.model.playlist.DatasetPlaylist;
 import de.dominikdassow.musicrs.repository.ChallengeSetRepository;
 import de.dominikdassow.musicrs.repository.DatasetRepository;
 import de.dominikdassow.musicrs.repository.TrackRepository;
-import de.dominikdassow.musicrs.service.database.TrackIdGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StopWatch;
 
-import java.io.File;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Component
 @Slf4j
@@ -40,84 +32,39 @@ public class DatabaseService {
     @Autowired
     private TrackRepository trackRepository;
 
-    @Autowired
-    private PlaylistFeatureIndex playlistFeatureIndex;
-
-    public void init() throws Exception {
-        TrackIdGenerator.initWith(mongoTemplate);
-        // PlaylistFeatureIdGenerator.initWith(mongoTemplate);
-
-        // datasetRepository.deleteAll();
-        // challengeSetRepository.deleteAll();
-        // trackRepository.deleteAll();
-
-        // importDataset();
-        // importChallengeSet();
+    public List<Track.WithIdAndUri> findAllTracksWithIdAndUri() {
+        return mongoTemplate.find(new Query() {{
+            fields().include("_id").include("uri");
+            with(Sort.by(Sort.Direction.ASC, "_id"));
+        }}, Track.WithIdAndUri.class, mongoTemplate.getCollectionName(Track.class));
     }
 
-    private void importDataset() throws Exception {
-        StopWatch timer = new StopWatch();
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        log.info("IMPORT DATASET");
-        timer.start();
-
-        final int slices = 100; // TODO
-        final int sliceSize = 1000;
-
-        for (int i = 0; i < (slices * sliceSize); i += sliceSize) {
-            final String slice = i + "-" + (i + sliceSize - 1);
-
-            log.info("> SLICE: " + slice);
-
-            JsonNode root = objectMapper
-                .readTree(new File("data/mpd/mpd.slice." + slice + ".json"));
-
-            List<DatasetPlaylist> playlists
-                = Arrays.asList(objectMapper.treeToValue(root.get("playlists"), DatasetPlaylist[].class));
-
-            playlists.forEach(playlist -> playlist.setFeatures(PlaylistFeatureIndex.generateFor(playlist)));
-
-            int insertedPlaylists
-                = datasetRepository.insertMany(playlists, DatasetPlaylist.class);
-
-            log.info(">> INSERTED PLAYLISTS: " + insertedPlaylists);
-
-//            List<Track> tracks = playlists.stream()
-//                .flatMap(p -> p.getTracks().values().stream())
-//                .collect(Collectors.toList());
-//
-//            int insertedTracks
-//                = trackRepository.insertMany(tracks, Track.class);
-//
-//            log.info(">> INSERTED TRACKS: " + insertedTracks);
-        }
-
-        timer.stop();
-        log.info("+ TIME IN SECONDS: " + timer.getTotalTimeSeconds());
+    public DatasetPlaylist getDatasetPlaylist(Integer id) {
+        return datasetRepository.findById(id).orElseThrow();
     }
 
-    private void importChallengeSet() throws Exception {
-        StopWatch timer = new StopWatch();
-        ObjectMapper objectMapper = new ObjectMapper();
+    public ChallengePlaylist getChallengePlaylist(Integer id) {
+        return challengeSetRepository.findById(id).orElseThrow();
+    }
 
-        log.info("IMPORT CHALLENGE SET");
-        timer.start();
+    public int insertDatasetPlaylists(List<DatasetPlaylist> playlists) {
+        return datasetRepository.insertMany(playlists, DatasetPlaylist.class);
+    }
 
-        JsonNode root = objectMapper
-            .readTree(new File("data/challenge/challenge_set.json"));
+    public int insertChallengePlaylists(List<ChallengePlaylist> playlists) {
+        return challengeSetRepository.insertMany(playlists, ChallengePlaylist.class);
+    }
 
-        List<ChallengePlaylist> playlists
-            = Arrays.asList(objectMapper.treeToValue(root.get("playlists"), ChallengePlaylist[].class));
+    public int insertTracks(List<Track> tracks) {
+        return trackRepository.insertMany(tracks, Track.class);
+    }
 
-        playlists.forEach(playlist -> playlist.setFeatures(PlaylistFeatureIndex.generateFor(playlist)));
+    public void resetDataset() {
+        datasetRepository.deleteAll();
+        trackRepository.deleteAll();
+    }
 
-        int insertedPlaylists
-            = challengeSetRepository.insertMany(playlists, ChallengePlaylist.class);
-
-        log.info(">> INSERTED PLAYLISTS: " + insertedPlaylists);
-
-        timer.stop();
-        log.info("+ TIME IN SECONDS: " + timer.getTotalTimeSeconds());
+    public void resetChallengeSet() {
+        challengeSetRepository.deleteAll();
     }
 }

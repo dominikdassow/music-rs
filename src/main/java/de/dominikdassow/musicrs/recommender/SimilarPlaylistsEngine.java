@@ -1,9 +1,8 @@
-package de.dominikdassow.musicrs.recommender.engine;
+package de.dominikdassow.musicrs.recommender;
 
-import de.dominikdassow.musicrs.model.AnyDocument;
-import de.dominikdassow.musicrs.model.AnyPlaylist;
-import de.dominikdassow.musicrs.model.DatasetPlaylist;
-import de.dominikdassow.musicrs.model.playlist.SimilarPlaylist;
+import de.dominikdassow.musicrs.model.Playlist;
+import de.dominikdassow.musicrs.model.playlist.DatasetPlaylist;
+import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.recommender.data.PlaylistsFeaturesData;
 import de.dominikdassow.musicrs.recommender.index.PlaylistFeatureIndex;
 import de.dominikdassow.musicrs.recommender.neighborhood.user.DynamicTopKUserNeighborhood;
@@ -17,10 +16,7 @@ import org.ranksys.core.util.tuples.Tuple2id;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -42,11 +38,11 @@ public class SimilarPlaylistsEngine {
     private List<Integer> excludedIds;
 
     public void init() {
-        init(new ArrayList<>());
+        init(new HashSet<>());
     }
 
-    public void init(List<AnyPlaylist> excluded) {
-        this.excludedIds = excluded.stream().map(AnyDocument::getId).collect(Collectors.toList());
+    public void init(Set<Playlist> excluded) {
+        this.excludedIds = excluded.stream().map(Playlist::getId).collect(Collectors.toList());
 
         playlistFeatureIndex.init(excluded); // TODO
 
@@ -54,7 +50,7 @@ public class SimilarPlaylistsEngine {
         similarity = new SetCosineUserSimilarity<>(data, 0.5, true);
     }
 
-    public List<SimilarPlaylist> getResults(AnyPlaylist playlist, int minNumberOfTracks) {
+    public List<SimilarTracksList> getResults(Playlist playlist, int minNumberOfTracks) {
         UserNeighborhood<Integer> neighborhood = new DynamicTopKUserNeighborhood<>(similarity,
             // TODO: Check statically?
             neighbor -> !excludedIds.contains(neighbor.v1) &&
@@ -77,10 +73,10 @@ public class SimilarPlaylistsEngine {
 
                 if (foundPlaylist == null) return null;
 
-                return new SimilarPlaylist(foundPlaylist, result.v2);
+                return SimilarTracksList.from(foundPlaylist).withSimilarity(result.v2);
             })
             .filter(Objects::nonNull)
-            .sorted(Comparator.comparingDouble(SimilarPlaylist::getSimilarity).reversed())
+            .sorted(Comparator.comparingDouble(SimilarTracksList::getSimilarity).reversed())
             .collect(Collectors.toList());
     }
 }

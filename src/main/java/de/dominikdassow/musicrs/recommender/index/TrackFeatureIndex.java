@@ -27,6 +27,7 @@ public class TrackFeatureIndex
         tracks.forEach(track -> {
             this.tracks.put(track.getId(), track);
 
+            // TODO: Store features in DB
             List<TrackFeature> features = track.getFeatures();
 
             features.forEach(feature -> {

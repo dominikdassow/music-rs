@@ -1,6 +1,6 @@
 package de.dominikdassow.musicrs.recommender.feature.playlist;
 
-import de.dominikdassow.musicrs.model.AnyPlaylist;
+import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.recommender.feature.AbstractFeatureDimension;
@@ -10,9 +10,9 @@ import java.util.Map;
 public abstract class PlaylistFeatureDimension<I>
     extends AbstractFeatureDimension<I, PlaylistFeature> {
 
-    protected AnyPlaylist playlist;
+    protected Playlist playlist;
 
-    public PlaylistFeatureDimension(AnyPlaylist playlist) {
+    public PlaylistFeatureDimension(Playlist playlist) {
         this.playlist = playlist;
 
         playlist.getTracks().values().forEach(track -> add(parseTrack(track)));

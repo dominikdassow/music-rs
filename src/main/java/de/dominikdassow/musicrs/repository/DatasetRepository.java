@@ -1,6 +1,6 @@
 package de.dominikdassow.musicrs.repository;
 
-import de.dominikdassow.musicrs.model.DatasetPlaylist;
+import de.dominikdassow.musicrs.model.playlist.DatasetPlaylist;
 import de.dominikdassow.musicrs.repository.custom.BulkOperationRepository;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;

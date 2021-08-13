@@ -1,6 +1,5 @@
 package de.dominikdassow.musicrs.recommender;
 
-import de.dominikdassow.musicrs.recommender.problem.MusicPlaylistContinuationProblem;
 import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.algorithm.Algorithm;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder;
