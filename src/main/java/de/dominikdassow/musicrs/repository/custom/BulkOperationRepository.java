@@ -3,8 +3,11 @@ package de.dominikdassow.musicrs.repository.custom;
 import de.dominikdassow.musicrs.model.Identifiable;
 
 import java.util.List;
+import java.util.Map;
 
 public interface BulkOperationRepository<T extends Identifiable> {
 
-    int insertMany(List<T> documents, Class<T> entityClass);
+    List<Integer> findAllIds(Class<T> entityClass);
+
+    int insertMany(Map<Integer, T> documents, Class<T> entityClass);
 }

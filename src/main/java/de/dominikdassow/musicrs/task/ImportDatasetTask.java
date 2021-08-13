@@ -12,8 +12,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -47,10 +48,17 @@ public class ImportDatasetTask
     protected void execute() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        final int slices = 1; // TODO
-        final int sliceSize = 1000;
+        final int slices = 1_000; // TODO
+        final int slicesOffset = 0; // TODO
+        final int slicesPerBatch = 50; // TODO
+        final int sliceSize = 1_000;
 
-        for (int i = 0; i < (slices * sliceSize); i += sliceSize) {
+        final Map<Integer, DatasetPlaylist> batchPlaylists = new HashMap<>();
+        final Map<Integer, Track> batchTracks = new HashMap<>();
+
+        final int offset = slicesOffset * sliceSize;
+
+        for (int i = offset; i < (offset + (slices * sliceSize)); i += sliceSize) {
             final String slice = i + "-" + (i + sliceSize - 1);
 
             log.info("> SLICE: " + slice);
@@ -61,19 +69,28 @@ public class ImportDatasetTask
             List<DatasetPlaylist> playlists
                 = Arrays.asList(objectMapper.treeToValue(root.get("playlists"), DatasetPlaylist[].class));
 
-            playlists.forEach(DatasetPlaylist::generateFeatures);
+            playlists.forEach(playlist -> {
+                playlist.generateFeatures();
+                batchPlaylists.putIfAbsent(playlist.getId(), playlist);
+            });
 
-            int insertedPlaylists = database.insertDatasetPlaylists(playlists);
+            playlists.stream()
+                .flatMap(playlist -> playlist.getTracks().values().stream())
+                .forEach(track -> batchTracks.putIfAbsent(track.getId(), track));
 
-            log.info(">> INSERTED PLAYLISTS: " + insertedPlaylists);
+            final boolean batchSizeReached = ((i + sliceSize) % (slicesPerBatch * sliceSize)) == 0;
+            final boolean isLast = (i + sliceSize) == (offset + (slices * sliceSize));
 
-            List<Track> tracks = playlists.stream()
-                .flatMap(p -> p.getTracks().values().stream())
-                .collect(Collectors.toList());
+            if (batchSizeReached || isLast) {
+                int insertedPlaylists = database.insertDatasetPlaylists(batchPlaylists);
+                log.info(">> INSERTED PLAYLISTS: " + insertedPlaylists);
 
-            int insertedTracks = database.insertTracks(tracks);
+                int insertedTracks = database.insertTracks(batchTracks);
+                log.info(">> INSERTED TRACKS: " + insertedTracks);
 
-            log.info(">> INSERTED TRACKS: " + insertedTracks);
+                batchPlaylists.clear();
+                batchTracks.clear();
+            }
         }
     }
 }

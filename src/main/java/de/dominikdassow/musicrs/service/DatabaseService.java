@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -47,15 +48,15 @@ public class DatabaseService {
         return challengeSetRepository.findById(id).orElseThrow();
     }
 
-    public int insertDatasetPlaylists(List<DatasetPlaylist> playlists) {
+    public int insertDatasetPlaylists(Map<Integer, DatasetPlaylist> playlists) {
         return datasetRepository.insertMany(playlists, DatasetPlaylist.class);
     }
 
-    public int insertChallengePlaylists(List<ChallengePlaylist> playlists) {
+    public int insertChallengePlaylists(Map<Integer, ChallengePlaylist> playlists) {
         return challengeSetRepository.insertMany(playlists, ChallengePlaylist.class);
     }
 
-    public int insertTracks(List<Track> tracks) {
+    public int insertTracks(Map<Integer, Track> tracks) {
         return trackRepository.insertMany(tracks, Track.class);
     }
 

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -53,7 +55,8 @@ public class ImportChallengeSetTask
 
         playlists.forEach(ChallengePlaylist::generateFeatures);
 
-        int insertedPlaylists = database.insertChallengePlaylists(playlists);
+        int insertedPlaylists = database.insertChallengePlaylists(playlists.stream()
+            .collect(Collectors.toMap(ChallengePlaylist::getId, Function.identity())));
 
         log.info(">> INSERTED PLAYLISTS: " + insertedPlaylists);
     }
