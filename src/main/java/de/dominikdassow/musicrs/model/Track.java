@@ -54,6 +54,7 @@ public class Track
     }
 
     @Data
+    @Document(collection = "tracks")
     public static class WithIdAndUri {
 
         private Integer id;

@@ -1,10 +1,7 @@
 package de.dominikdassow.musicrs;
 
 import de.dominikdassow.musicrs.service.RecommendationService;
-import de.dominikdassow.musicrs.task.ImportChallengeSetTask;
-import de.dominikdassow.musicrs.task.ImportDatasetTask;
-import de.dominikdassow.musicrs.task.EvaluateSamplePlaylistsTask;
-import de.dominikdassow.musicrs.task.MakeRecommendationTask;
+import de.dominikdassow.musicrs.task.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.Banner;
@@ -26,6 +23,9 @@ public class MusicRsApplication
 
     @Autowired
     private ImportChallengeSetTask importChallengeSetTask;
+
+    @Autowired
+    private DownloadSpotifyDataTask downloadSpotifyDataTask;
 
     @Autowired
     private MakeRecommendationTask makeRecommendationTask;
@@ -52,6 +52,9 @@ public class MusicRsApplication
 
 //        importChallengeSetTask
 //            .rebuilding(false)
+//            .run();
+
+//        downloadSpotifyDataTask
 //            .run();
 
 //        makeRecommendationTask

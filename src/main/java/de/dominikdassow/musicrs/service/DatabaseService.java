@@ -1,5 +1,7 @@
 package de.dominikdassow.musicrs.service;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Streams;
 import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.playlist.ChallengePlaylist;
 import de.dominikdassow.musicrs.model.playlist.DatasetPlaylist;
@@ -8,13 +10,13 @@ import de.dominikdassow.musicrs.repository.DatasetRepository;
 import de.dominikdassow.musicrs.repository.TrackRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @Slf4j
@@ -33,11 +35,16 @@ public class DatabaseService {
     @Autowired
     private TrackRepository trackRepository;
 
+    public Stream<Track.WithIdAndUri> streamAllTracksWithIdAndUri() {
+        return trackRepository.streamAllWithIdAndUri();
+    }
+
+    public Stream<List<Track.WithIdAndUri>> streamAllTracksWithIdAndUri(int batchSize) {
+        return Streams.stream(Iterators.partition(streamAllTracksWithIdAndUri().iterator(), batchSize));
+    }
+
     public List<Track.WithIdAndUri> findAllTracksWithIdAndUri() {
-        return mongoTemplate.find(new Query() {{
-            fields().include("_id").include("uri");
-            with(Sort.by(Sort.Direction.ASC, "_id"));
-        }}, Track.WithIdAndUri.class, mongoTemplate.getCollectionName(Track.class));
+        return streamAllTracksWithIdAndUri().collect(Collectors.toList());
     }
 
     public DatasetPlaylist getDatasetPlaylist(Integer id) {
