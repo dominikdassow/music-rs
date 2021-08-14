@@ -55,6 +55,14 @@ public class Track
 
     @Data
     @Document(collection = "tracks")
+    public static class WithId
+        implements Identifiable {
+
+        private Integer id;
+    }
+
+    @Data
+    @Document(collection = "tracks")
     public static class WithIdAndUri {
 
         private Integer id;

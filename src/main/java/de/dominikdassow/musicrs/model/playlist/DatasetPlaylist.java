@@ -1,9 +1,10 @@
 package de.dominikdassow.musicrs.model.playlist;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.dominikdassow.musicrs.model.Identifiable;
 import de.dominikdassow.musicrs.model.Playlist;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
@@ -29,4 +30,12 @@ public class DatasetPlaylist
 
     @JsonProperty("collaborative")
     private Boolean isCollaborative;
+
+    @Data
+    @Document(collection = "dataset")
+    public static class WithId
+        implements Identifiable {
+
+        private Integer id;
+    }
 }

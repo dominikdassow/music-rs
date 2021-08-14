@@ -13,6 +13,9 @@ import java.util.stream.Stream;
 public interface TrackRepository
     extends MongoRepository<Track, Integer>, BulkOperationRepository<Track> {
 
+    @Query(value = "{}", sort = "{ _id : 1 }", fields = "{ _id : 1 }")
+    Stream<Track.WithId> streamAllWithId();
+
     @Query(value = "{}", sort = "{ _id : 1 }", fields = "{ _id : 1, uri: 1 }")
     Stream<Track.WithIdAndUri> streamAllWithIdAndUri();
 }

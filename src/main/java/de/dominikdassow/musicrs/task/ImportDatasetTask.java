@@ -48,9 +48,9 @@ public class ImportDatasetTask
     protected void execute() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        final int slices = 1_000; // TODO
-        final int slicesOffset = 0; // TODO
-        final int slicesPerBatch = 50; // TODO
+        final int slices = 1_000;
+        final int slicesOffset = 0;
+        final int slicesPerBatch = 25;
         final int sliceSize = 1_000;
 
         final Map<Integer, DatasetPlaylist> batchPlaylists = new HashMap<>();

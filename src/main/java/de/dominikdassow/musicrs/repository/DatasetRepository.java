@@ -14,6 +14,9 @@ import java.util.stream.Stream;
 public interface DatasetRepository
     extends MongoRepository<DatasetPlaylist, Integer>, BulkOperationRepository<DatasetPlaylist> {
 
+    @Query(value = "{}", sort = "{ _id : 1 }", fields = "{ _id : 1 }")
+    Stream<DatasetPlaylist.WithId> streamAllWithId();
+
     @Query(value = "{}", sort = "{ _id : 1 }", fields = "{ _id : 1, features: 1 }")
     Stream<DatasetPlaylist> streamAllWithIdAndFeatures();
 

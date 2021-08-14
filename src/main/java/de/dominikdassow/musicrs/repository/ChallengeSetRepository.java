@@ -12,6 +12,9 @@ import java.util.stream.Stream;
 public interface ChallengeSetRepository
     extends MongoRepository<ChallengePlaylist, Integer>, BulkOperationRepository<ChallengePlaylist> {
 
+    @Query(value = "{}", sort = "{ _id : 1 }", fields = "{ _id : 1 }")
+    Stream<ChallengePlaylist.WithId> streamAllWithId();
+
     @Query(value = "{}", sort = "{ _id : 1 }", fields = "{ _id : 1, features: 1 }")
     Stream<ChallengePlaylist> streamAllWithIdAndFeatures();
 }

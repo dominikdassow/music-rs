@@ -56,15 +56,18 @@ public class DatabaseService {
     }
 
     public int insertDatasetPlaylists(Map<Integer, DatasetPlaylist> playlists) {
-        return datasetRepository.insertMany(playlists, DatasetPlaylist.class);
+        return datasetRepository
+            .insertMany(playlists, datasetRepository.streamAllWithId(), DatasetPlaylist.class);
     }
 
     public int insertChallengePlaylists(Map<Integer, ChallengePlaylist> playlists) {
-        return challengeSetRepository.insertMany(playlists, ChallengePlaylist.class);
+        return challengeSetRepository
+            .insertMany(playlists, challengeSetRepository.streamAllWithId(), ChallengePlaylist.class);
     }
 
     public int insertTracks(Map<Integer, Track> tracks) {
-        return trackRepository.insertMany(tracks, Track.class);
+        return trackRepository
+            .insertMany(tracks, trackRepository.streamAllWithId(), Track.class);
     }
 
     public void resetDataset() {

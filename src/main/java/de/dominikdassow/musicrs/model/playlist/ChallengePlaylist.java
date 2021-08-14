@@ -1,6 +1,7 @@
 package de.dominikdassow.musicrs.model.playlist;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.dominikdassow.musicrs.model.Identifiable;
 import de.dominikdassow.musicrs.model.Playlist;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -17,4 +18,12 @@ public class ChallengePlaylist
 
     @JsonProperty("num_samples")
     private Integer numberOfSamples;
+
+    @Data
+    @Document(collection = "dataset")
+    public static class WithId
+        implements Identifiable {
+
+        private Integer id;
+    }
 }
