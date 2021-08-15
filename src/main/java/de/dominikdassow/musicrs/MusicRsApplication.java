@@ -1,6 +1,5 @@
 package de.dominikdassow.musicrs;
 
-import de.dominikdassow.musicrs.service.RecommendationService;
 import de.dominikdassow.musicrs.task.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +54,7 @@ public class MusicRsApplication
 //            .run();
 
 //        downloadSpotifyDataTask
+//            .onlyMissing(true)
 //            .run();
 
 //        makeRecommendationTask
