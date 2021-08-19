@@ -5,10 +5,12 @@ import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationRunner;
+import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
+import de.dominikdassow.musicrs.recommender.algorithm.NSGAII;
 import de.dominikdassow.musicrs.recommender.engine.SimilarPlaylistsEngine;
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.lambda.tuple.Tuple;
 import org.jooq.lambda.tuple.Tuple3;
@@ -19,10 +21,6 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class RecommendationService {
-
-    public enum AlgorithmType {
-        NSGAII
-    }
 
     private final SimilarPlaylistsEngine similarPlaylistsEngine;
     private final SimilarTracksEngine similarTracksEngine;
@@ -74,7 +72,7 @@ public class RecommendationService {
         similarTracksEngine = new SimilarTracksEngine();
     }
 
-    public List<Result> makeRecommendations(Set<Integer> playlists, Set<AlgorithmType> algorithms) {
+    public List<Result> makeRecommendations(Set<Integer> playlists, List<AlgorithmConfiguration> algorithmConfigurations) {
         List<Result> recommendations = new ArrayList<>();
 
         playlists.forEach(playlist -> {
@@ -92,32 +90,36 @@ public class RecommendationService {
             final MusicPlaylistContinuationProblem problem
                 = new MusicPlaylistContinuationProblem(similarTracksEngine, tracks, similarTracksLists);
 
-            Map<AlgorithmType, MusicPlaylistContinuationRunner> runners = new HashMap<>() {{
-                if (algorithms.contains(AlgorithmType.NSGAII)) {
-                    put(AlgorithmType.NSGAII, new MusicPlaylistContinuationRunner.NSGAII(problem));
-                }
+            Map<AlgorithmConfiguration, MusicPlaylistContinuationRunner> runners = new HashMap<>() {{
+                algorithmConfigurations.forEach(configuration -> {
+                    if (configuration instanceof AlgorithmConfiguration.NSGAII) {
+                        put(configuration, new NSGAII(problem, (AlgorithmConfiguration.NSGAII) configuration));
+                    }
+                });
             }};
 
-            runners.forEach((algorithm, runner) -> {
-                log.info("RUN: " + algorithm);
+            runners.forEach((configuration, runner) -> {
+                log.info("RUN: " + configuration.toString());
 
                 List<List<String>> results = runner.run();
 
-                recommendations.add(new Result(playlist, algorithm, results));
+                recommendations.add(new Result(playlist, configuration, results));
             });
         });
 
         return recommendations;
     }
 
-    @Data
-    @AllArgsConstructor
+    @RequiredArgsConstructor
     public static class Result {
 
-        private Integer playlist;
+        @Getter
+        private final Integer playlist;
 
-        private AlgorithmType algorithm;
+        @Getter
+        private final AlgorithmConfiguration configuration;
 
-        private List<List<String>> tracks;
+        @Getter
+        private final List<List<String>> tracks;
     }
 }

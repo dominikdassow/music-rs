@@ -5,6 +5,7 @@ import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.feature.FeatureGenerator;
 import de.dominikdassow.musicrs.model.feature.TrackFeature;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationEvaluator;
+import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.service.DatabaseService;
 import de.dominikdassow.musicrs.service.RecommendationService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,14 +24,15 @@ public class EvaluateSamplesTask
     private final Map<Integer, Playlist.Sample> samples = new HashMap<>();
 
     private RecommendationService recommender;
-    private Set<RecommendationService.AlgorithmType> algorithms;
+
+    private List<AlgorithmConfiguration> algorithmConfigurations;
 
     public EvaluateSamplesTask() {
         super("Evaluate Sample Playlists");
     }
 
-    public EvaluateSamplesTask using(RecommendationService.AlgorithmType... algorithms) {
-        this.algorithms = Set.of(algorithms);
+    public EvaluateSamplesTask using(AlgorithmConfiguration... algorithmConfigurations) {
+        this.algorithmConfigurations = List.of(algorithmConfigurations);
 
         return this;
     }
@@ -74,7 +76,7 @@ public class EvaluateSamplesTask
     @Override
     protected void execute() {
         List<RecommendationService.Result> recommendations = recommender
-            .makeRecommendations(samples.keySet(), algorithms);
+            .makeRecommendations(samples.keySet(), algorithmConfigurations);
 
         Map<String, Track> allRecommendedTracks = new HashMap<>() {{
             DatabaseService.readTracks(recommendations.stream()
@@ -87,7 +89,7 @@ public class EvaluateSamplesTask
 
         recommendations.forEach(recommendation -> {
             log.info("### RESULT [playlist=" + recommendation.getPlaylist() + "] " +
-                "[" + recommendation.getAlgorithm() + "]");
+                "[" + recommendation.getConfiguration().toString() + "]");
 
             List<Double> rPrecision = new ArrayList<>();
             List<Double> ndcg = new ArrayList<>();

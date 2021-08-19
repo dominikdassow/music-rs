@@ -1,6 +1,6 @@
 package de.dominikdassow.musicrs;
 
-import de.dominikdassow.musicrs.service.RecommendationService;
+import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.task.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,13 +39,27 @@ public class App {
             case MAKE_RECOMMENDATIONS:
                 makeRecommendations
                     .forPlaylists(1_000_800)
-                    .using(RecommendationService.AlgorithmType.NSGAII)
+                    .using(
+                        AlgorithmConfiguration.NSGAII.builder()
+                            .populationSize(100).maxEvaluations(5_000)
+                            .crossoverProbability(0.9).mutationProbability(0.2)
+                            .build()
+                    )
                     .run();
                 break;
             case EVALUATE_SAMPLES:
                 evaluateSamplesTask
-                    .sampling(483)
-                    .using(RecommendationService.AlgorithmType.NSGAII)
+                    .sampling(483, 777)
+                    .using(
+                        AlgorithmConfiguration.NSGAII.builder()
+                            .populationSize(100).maxEvaluations(5_000)
+                            .crossoverProbability(0.9).mutationProbability(0.2)
+                            .build(),
+                        AlgorithmConfiguration.NSGAII.builder()
+                            .populationSize(100).maxEvaluations(5_000)
+                            .crossoverProbability(0.8).mutationProbability(0.3)
+                            .build()
+                    )
                     .run();
                 break;
         }
