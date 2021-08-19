@@ -26,11 +26,11 @@ public class DatabaseService {
     public static final String DELIMITER = ",";
 
     public enum Store {
-        PLAYLIST("data/store/" + STORE_VERSION + "/playlist.csv"),
-        PLAYLIST_FEATURE("data/store/" + STORE_VERSION + "/playlist-feature.csv"),
-        TRACK("data/store/" + STORE_VERSION + "/track.csv"),
-        TRACK_FEATURE("data/store/" + STORE_VERSION + "/track-feature.csv"),
-        TRACK_AUDIO_FEATURE("data/store/tracks-audio-feature.csv");
+        PLAYLIST("../data/store/" + STORE_VERSION + "/playlist.csv"),
+        PLAYLIST_FEATURE("../data/store/" + STORE_VERSION + "/playlist-feature.csv"),
+        TRACK("../data/store/" + STORE_VERSION + "/track.csv"),
+        TRACK_FEATURE("../data/store/" + STORE_VERSION + "/track-feature.csv"),
+        TRACK_AUDIO_FEATURE("../data/store/tracks-audio-feature.csv");
 
         public final String file;
 

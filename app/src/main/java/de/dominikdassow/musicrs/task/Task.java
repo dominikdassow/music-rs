@@ -1,7 +1,6 @@
 package de.dominikdassow.musicrs.task;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.StopWatch;
 
 @Slf4j
 public abstract class Task {
@@ -12,15 +11,13 @@ public abstract class Task {
 
     private final String name;
 
-    private final StopWatch timer = new StopWatch();
-
     protected Task(String name) {
         this.name = name;
     }
 
     public void run() {
         log("INIT");
-        timer.start();
+        long start = System.currentTimeMillis();
 
         try {
             init();
@@ -38,8 +35,7 @@ public abstract class Task {
             finish();
         }
 
-        timer.stop();
-        log("FINISH - " + timer.getTotalTimeSeconds() + "s");
+        log("FINISH - " + (System.currentTimeMillis() - start) + "s");
     }
 
     protected void init() throws Exception {}
@@ -49,6 +45,6 @@ public abstract class Task {
     protected void finish() {}
 
     private void log(String message) {
-        log.info(name + " :: " + message);
+        log.trace(name + " :: " + message);
     }
 }

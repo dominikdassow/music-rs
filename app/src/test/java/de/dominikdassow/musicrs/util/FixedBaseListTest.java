@@ -1,9 +1,9 @@
 package de.dominikdassow.musicrs.util;
 
-import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -14,7 +14,7 @@ public class FixedBaseListTest {
     public void testEmpty() {
         FixedBaseList<String> list = new FixedBaseList<>();
 
-        assertEquals(Lists.emptyList(), list.values());
+        assertEquals(List.of(), list.values());
     }
 
     @Test
@@ -24,7 +24,7 @@ public class FixedBaseListTest {
             put(1, "B");
         }});
 
-        assertEquals(Lists.list("A", "B"), list.values());
+        assertEquals(List.of("A", "B"), list.values());
     }
 
     @Test
@@ -46,7 +46,7 @@ public class FixedBaseListTest {
 
         list.add("C");
 
-        assertEquals(Lists.list("A", "B", "C"), list.values());
+        assertEquals(List.of("A", "B", "C"), list.values());
     }
 
     @Test
@@ -58,7 +58,7 @@ public class FixedBaseListTest {
 
         list.add("C");
 
-        assertEquals(Lists.list("C", "A", "B"), list.values());
+        assertEquals(List.of("C", "A", "B"), list.values());
     }
 
     @Test
@@ -70,7 +70,7 @@ public class FixedBaseListTest {
 
         list.add("C");
 
-        assertEquals(Lists.list("A", "C", "B"), list.values());
+        assertEquals(List.of("A", "C", "B"), list.values());
     }
 
     @Test
@@ -82,15 +82,15 @@ public class FixedBaseListTest {
 
         list.add("C");
 
-        assertEquals(Lists.list("A", "C", "B"), list.values());
+        assertEquals(List.of("A", "C", "B"), list.values());
 
         list.reset();
 
-        assertEquals(Lists.list("A", "B"), list.values());
+        assertEquals(List.of("A", "B"), list.values());
 
         list.add("C");
 
-        assertEquals(Lists.list("A", "C", "B"), list.values());
+        assertEquals(List.of("A", "C", "B"), list.values());
     }
 
     @Test
