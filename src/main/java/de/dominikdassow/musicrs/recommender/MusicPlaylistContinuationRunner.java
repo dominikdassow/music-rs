@@ -29,7 +29,7 @@ public abstract class MusicPlaylistContinuationRunner
 
     protected abstract Algorithm<List<PermutationSolution<Integer>>> getAlgorithm();
 
-    public List<List<Integer>> run() {
+    public List<List<String>> run() {
         Algorithm<List<PermutationSolution<Integer>>> algorithm = getAlgorithm();
 
         long computingTime = execute(algorithm);
@@ -43,6 +43,21 @@ public abstract class MusicPlaylistContinuationRunner
         return population.stream()
             .map(solution -> problem.getTrackIds(solution.getVariables()))
             .collect(Collectors.toList());
+    }
+
+    private long execute(Algorithm<?> algorithm) {
+        long start = System.currentTimeMillis();
+
+        Thread thread = new Thread(algorithm);
+        thread.start();
+
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            throw new JMetalException("Error in thread.join()", e);
+        }
+
+        return System.currentTimeMillis() - start;
     }
 
     public static class NSGAII
@@ -73,20 +88,5 @@ public abstract class MusicPlaylistContinuationRunner
                 .setMaxEvaluations(MAX_EVALUATIONS)
                 .build();
         }
-    }
-
-    private long execute(Algorithm<?> algorithm) {
-        long start = System.currentTimeMillis();
-
-        Thread thread = new Thread(algorithm);
-        thread.start();
-
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            throw new JMetalException("Error in thread.join()", e);
-        }
-
-        return System.currentTimeMillis() - start;
     }
 }

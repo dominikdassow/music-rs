@@ -1,6 +1,7 @@
 /data/mpd/
 /data/challenge/
 /data/spotify/
+/data/store/
 
 /src/main/resources/spotify.properties
 

@@ -1,72 +1,30 @@
 package de.dominikdassow.musicrs.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import de.dominikdassow.musicrs.model.feature.TrackFeature;
-import lombok.AllArgsConstructor;
+import de.dominikdassow.musicrs.model.track.AudioFeatures;
+import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.With;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Document(collection = "tracks")
-public class Track
-    implements Identifiable {
+@Builder(toBuilder = true)
+public class Track {
 
-    @Id
-    @With
-    private Integer id;
+    private String id;
 
-    @Indexed(unique = true)
-    @JsonProperty("track_uri")
-    private String uri;
+    private String artistId;
 
-    @JsonProperty("track_name")
-    private String name;
+    private String albumId;
 
-    @JsonProperty("artist_uri")
-    private String artistUri;
+    private Set<TrackFeature> features;
 
-    @JsonProperty("artist_name")
-    private String artistName;
+    private AudioFeatures audioFeatures;
 
-    @JsonProperty("album_uri")
-    private String albumUri;
+    public void setAudioFeaturesFrom(Map<String, Map<TrackFeature.Audio, Double>> audioFeatures) {
+        if (!audioFeatures.containsKey(id)) return;
 
-    @JsonProperty("album_name")
-    private String albumName;
-
-    @JsonProperty("duration_ms")
-    private Integer duration;
-
-    // TODO: Use generateFeatures() + Store in DB
-    public List<TrackFeature> getFeatures() {
-        return List.of(
-            new TrackFeature(TrackFeature.Dimension.ARTIST, artistUri),
-            new TrackFeature(TrackFeature.Dimension.ALBUM, albumUri)
-        );
-    }
-
-    @Data
-    @Document(collection = "tracks")
-    public static class WithId
-        implements Identifiable {
-
-        private Integer id;
-    }
-
-    @Data
-    @Document(collection = "tracks")
-    public static class WithIdAndUri {
-
-        private Integer id;
-
-        private String uri;
+        setAudioFeatures(AudioFeatures.from(audioFeatures.get(id)));
     }
 }

@@ -6,36 +6,26 @@ import com.wrapper.spotify.exceptions.detailed.TooManyRequestsException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import com.wrapper.spotify.model_objects.specification.AudioFeatures;
 import com.wrapper.spotify.requests.data.tracks.GetAudioFeaturesForSeveralTracksRequest;
-import de.dominikdassow.musicrs.model.Track;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.core5.http.ParseException;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
 
-@Component
 @Slf4j
-@PropertySource("classpath:spotify.properties")
-@SuppressWarnings("unused")
 public class SpotifyService {
 
-    @Value("${spotify.api.client-id}")
-    private String clientId;
+    private static final String CLIENT_ID = "f4e295abae84403485807f85ca438a5d";
+    private static final String CLIENT_SECRET = "1680a267781141c580983e51c6084a07";
 
-    @Value("${spotify.api.client-secret}")
-    private String clientSecret;
+    private final SpotifyApi spotifyApi;
 
-    private SpotifyApi spotifyApi;
-
-    public void init() {
-        log.info("SpotifyService::init()");
+    public SpotifyService() {
+        log.info("SpotifyService()");
 
         spotifyApi = new SpotifyApi.Builder()
-            .setClientId(clientId)
-            .setClientSecret(clientSecret)
+            .setClientId(CLIENT_ID)
+            .setClientSecret(CLIENT_SECRET)
             .build();
 
         try {
@@ -51,12 +41,12 @@ public class SpotifyService {
         }
     }
 
-    public AudioFeatures[] getAudioFeatures(List<Track.WithIdAndUri> tracks) throws Exception {
-        final GetAudioFeaturesForSeveralTracksRequest request = spotifyApi
-            .getAudioFeaturesForSeveralTracks(extractTrackIds(tracks))
-            .build();
-
+    public AudioFeatures[] getAudioFeatures(List<String> tracks) throws Exception {
         try {
+            final GetAudioFeaturesForSeveralTracksRequest request = spotifyApi
+                .getAudioFeaturesForSeveralTracks(tracks.toArray(String[]::new))
+                .build();
+
             return request.execute();
         } catch (TooManyRequestsException e) {
             int retryAfter = e.getRetryAfter();
@@ -71,11 +61,5 @@ public class SpotifyService {
         } catch (IOException | SpotifyWebApiException | ParseException e) {
             throw new Exception(e.getMessage());
         }
-    }
-
-    public String[] extractTrackIds(List<Track.WithIdAndUri> tracks) {
-        return tracks.stream()
-            .map(track -> track.getUri().split(":")[2])
-            .toArray(String[]::new);
     }
 }

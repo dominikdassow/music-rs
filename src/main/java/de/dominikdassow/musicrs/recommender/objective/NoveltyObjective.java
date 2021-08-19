@@ -14,19 +14,19 @@ public class NoveltyObjective
     }
 
     @Override
-    public double evaluate(List<Integer> tracks) {
+    public double evaluate(List<String> tracks) {
         double fitness = 0.0;
 
         final double numberOfTracks = tracks.size();
 
         for (int i = 1; i <= tracks.size(); i++) {
-            final Integer trackId = tracks.get(i - 1);
+            final String trackId = tracks.get(i - 1);
 
-            final long numberOfMatchingPlaylists = similarTracksLists.stream()
+            final long numberOfMatchingTrackLists = similarTracksLists.stream()
                 .filter(playlist -> playlist.contains(trackId)).count();
 
-            if (numberOfMatchingPlaylists > 0) {
-                fitness += (1.0 / numberOfMatchingPlaylists) * (numberOfTracks / i);
+            if (numberOfMatchingTrackLists > 0) {
+                fitness += (1.0 / numberOfMatchingTrackLists) * (numberOfTracks / i);
             } else {
                 fitness += (numberOfTracks / i);
             }

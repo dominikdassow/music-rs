@@ -1,70 +1,53 @@
 package de.dominikdassow.musicrs;
 
+import de.dominikdassow.musicrs.service.RecommendationService;
 import de.dominikdassow.musicrs.task.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.Banner;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 
 import java.util.Arrays;
 
-@SpringBootApplication
 @Slf4j
-@SuppressWarnings("unused")
-public class MusicRsApplication
-    implements CommandLineRunner {
+public class MusicRsApplication {
 
-    @Autowired
-    private ImportDatasetTask importDatasetTask;
+    private static final DownloadSpotifyDataTask downloadSpotifyDataTask
+        = new DownloadSpotifyDataTask();
 
-    @Autowired
-    private ImportChallengeSetTask importChallengeSetTask;
+    private static final ImportDataTask importDataTask
+        = new ImportDataTask();
 
-    @Autowired
-    private DownloadSpotifyDataTask downloadSpotifyDataTask;
+    private static final MakeRecommendationsTask makeRecommendations
+        = new MakeRecommendationsTask();
 
-    @Autowired
-    private MakeRecommendationTask makeRecommendationTask;
-
-    @Autowired
-    private EvaluateSamplePlaylistsTask evaluateSamplePlaylistsTask;
+    private static final EvaluateSamplesTask evaluateSamplesTask
+        = new EvaluateSamplesTask();
 
     public static void main(String[] args) {
-        new SpringApplicationBuilder(MusicRsApplication.class)
-            .bannerMode(Banner.Mode.OFF)
-            .web(WebApplicationType.NONE)
-            .logStartupInfo(false)
-            .lazyInitialization(true)
-            .run(args);
-    }
-
-    @Override
-    public void run(String... args) throws Exception {
         log.info("MusicRsApplication: " + Arrays.toString(args));
 
-//        importDatasetTask
-//            .rebuilding(false)
-//            .run();
+        final Task.Type task = Task.Type.EVALUATE_SAMPLES;
 
-//        importChallengeSetTask
-//            .rebuilding(false)
-//            .run();
-
-//        downloadSpotifyDataTask
-//            .onlyMissing(true)
-//            .run();
-
-//        makeRecommendationTask
-//            .forChallengePlaylists(1_000_800)
-//            .using(RecommendationService.AlgorithmType.NSGAII)
-//            .run();
-
-//        evaluateSamplePlaylistsTask
-//            .using(RecommendationService.AlgorithmType.NSGAII)
-//            .sampling(90)
-//            .run();
+        switch (task) {
+            case DOWNLOAD_SPOTIFY_DATA:
+                downloadSpotifyDataTask
+                    .onlyMissing(false)
+                    .run();
+                break;
+            case IMPORT_DATA:
+                importDataTask
+                    .run();
+                break;
+            case MAKE_RECOMMENDATIONS:
+                makeRecommendations
+                    .forPlaylists(1_000_800)
+                    .using(RecommendationService.AlgorithmType.NSGAII)
+                    .run();
+                break;
+            case EVALUATE_SAMPLES:
+                evaluateSamplesTask
+                    .sampling(483)
+                    .using(RecommendationService.AlgorithmType.NSGAII)
+                    .run();
+                break;
+        }
     }
 }

@@ -17,6 +17,31 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MusicPlaylistContinuationEvaluatorTest {
 
+    private static Track make(String track, String artist) {
+        return Track.builder()
+            .id(track)
+            .artistId(artist)
+            .build();
+    }
+
+    private static Track makeOne(Integer track, Integer artist) {
+        return make("T:" + track, "A:" + artist);
+    }
+
+    private static Track make(Integer i) {
+        return make("T:" + i, "A:" + i);
+    }
+
+    private static List<Track> make(List<Integer> i) {
+        return i.stream().map(MusicPlaylistContinuationEvaluatorTest::make).collect(Collectors.toList());
+    }
+
+    private static List<Track> make(Integer start, Integer end) {
+        return new ArrayList<>() {{
+            IntStream.range(start, end).forEach(i -> add(make(i)));
+        }};
+    }
+
     @Test
     void testRPrecision() {
         Map<Tuple2<List<Track>, List<Track>>, Double> test = Map.ofEntries(
@@ -164,30 +189,5 @@ class MusicPlaylistContinuationEvaluatorTest {
             assertEquals(1.0, evaluator.getNDCG(), n);
             assertEquals(0.0, evaluator.getRecommendedSongsClicks(), n);
         });
-    }
-
-    private static Track make(String track, String artist) {
-        return new Track() {{
-            setUri(track);
-            setArtistUri(artist);
-        }};
-    }
-
-    private static Track makeOne(Integer track, Integer artist) {
-        return make("T:" + track, "A:" + artist);
-    }
-
-    private static Track make(Integer i) {
-        return make("T:" + i, "A:" + i);
-    }
-
-    private static List<Track> make(List<Integer> i) {
-        return i.stream().map(MusicPlaylistContinuationEvaluatorTest::make).collect(Collectors.toList());
-    }
-
-    private static List<Track> make(Integer start, Integer end) {
-        return new ArrayList<>() {{
-            IntStream.range(start, end).forEach(i -> add(make(i)));
-        }};
     }
 }

@@ -1,6 +1,6 @@
 package de.dominikdassow.musicrs.model.feature;
 
-import de.dominikdassow.musicrs.service.database.PlaylistFeatureIdGenerator;
+import de.dominikdassow.musicrs.util.Formatter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -8,11 +8,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class PlaylistFeature {
 
-    public enum Dimension {
-        TRACK,
-        ARTIST,
-        ALBUM,
-    }
+    public static final String DELIMITER = "#";
 
     private Dimension dimension;
 
@@ -20,7 +16,18 @@ public class PlaylistFeature {
 
     private Double value;
 
-    public Integer getId() {
-        return PlaylistFeatureIdGenerator.generate(dimension, identifier);
+    public String getId() {
+        return dimension.name() + DELIMITER + identifier;
+    }
+
+    public String formattedValue() {
+        return Formatter.format(value);
+    }
+
+    public enum Dimension {
+        TRACK,
+        ARTIST,
+        ALBUM,
+        AUDIO,
     }
 }

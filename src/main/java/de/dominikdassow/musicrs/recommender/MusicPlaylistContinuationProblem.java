@@ -1,10 +1,7 @@
 package de.dominikdassow.musicrs.recommender;
 
-import de.dominikdassow.musicrs.model.Playlist;
-import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
-import de.dominikdassow.musicrs.recommender.data.TracksFeaturesData;
-import de.dominikdassow.musicrs.recommender.index.TrackFeatureIndex;
+import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
 import de.dominikdassow.musicrs.recommender.objective.AccuracyObjective;
 import de.dominikdassow.musicrs.recommender.objective.DiversityObjective;
 import de.dominikdassow.musicrs.recommender.objective.NoveltyObjective;
@@ -24,31 +21,28 @@ public class MusicPlaylistContinuationProblem
     extends AbstractGenericProblem<PermutationSolution<Integer>>
     implements PermutationProblem<PermutationSolution<Integer>> {
 
-    private final FixedBaseList<Integer> solutionTracks;
-    private final List<Track> candidateTracks;
-
+    private final FixedBaseList<String> solutionTracks;
+    private final List<String> candidateTracks;
     private final List<Objective> objectives;
 
-    public MusicPlaylistContinuationProblem(Playlist playlist, List<SimilarTracksList> similarTracksLists) {
-        solutionTracks = new FixedBaseList<>(playlist.getTracks().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getId())));
+    public MusicPlaylistContinuationProblem(
+        SimilarTracksEngine similarTracksEngine,
+        Map<Integer, String> tracks,
+        List<SimilarTracksList> similarTracks) {
+
+        solutionTracks = new FixedBaseList<>(tracks);
 
         candidateTracks = new ArrayList<>(new HashSet<>() {{
-            similarTracksLists.forEach(playlist -> addAll(playlist.getTracks().values()));
+            similarTracks.forEach(list -> addAll(list.getTracks()));
         }});
 
-        TracksFeaturesData tracksFeaturesData = new TracksFeaturesData(new TrackFeatureIndex(new HashSet<>() {{
-            addAll(playlist.getTracks().values());
-            similarTracksLists.forEach(playlist -> addAll(playlist.getTracks().values()));
-        }}));
-
         objectives = Arrays.asList(
-            new AccuracyObjective(similarTracksLists),
-            new NoveltyObjective(similarTracksLists),
-            new DiversityObjective(tracksFeaturesData)
+            new AccuracyObjective(similarTracks),
+            new NoveltyObjective(similarTracks),
+            new DiversityObjective(similarTracksEngine)
         );
 
-        setNumberOfVariables(playlist.getTracks().size() + candidateTracks.size());
+        setNumberOfVariables(tracks.size() + candidateTracks.size());
         setNumberOfObjectives(objectives.size());
         setName("MusicPlaylistContinuationProblem");
     }
@@ -68,7 +62,7 @@ public class MusicPlaylistContinuationProblem
         solutionTracks.reset();
 
         solution.getVariables()
-            .forEach(index -> solutionTracks.add(candidateTracks.get(index).getId()));
+            .forEach(index -> solutionTracks.add(candidateTracks.get(index)));
 
         for (int i = 0; i < objectives.size(); i++) {
             // TODO: Constant
@@ -76,9 +70,9 @@ public class MusicPlaylistContinuationProblem
         }
     }
 
-    public List<Integer> getTrackIds(List<Integer> indexes) {
+    public List<String> getTrackIds(List<Integer> indexes) {
         return indexes.stream()
-            .map(index -> candidateTracks.get(index).getId())
+            .map(candidateTracks::get)
             .collect(Collectors.toList());
     }
 }
