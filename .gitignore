@@ -2,6 +2,9 @@
 /data/challenge/
 /data/spotify/
 /data/store/
+/data/study/
+
+jMetal.log
 
 ### GRADLE ###
 .gradle

@@ -10,19 +10,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-public abstract class MusicPlaylistContinuationRunner
+public class MusicPlaylistContinuationRunner
     extends AbstractAlgorithmRunner {
 
-    protected MusicPlaylistContinuationProblem problem;
+    protected final MusicPlaylistContinuationAlgorithm algorithm;
 
-    public MusicPlaylistContinuationRunner(MusicPlaylistContinuationProblem problem) {
-        this.problem = problem;
+    public MusicPlaylistContinuationRunner(MusicPlaylistContinuationAlgorithm algorithm) {
+        this.algorithm = algorithm;
     }
 
-    protected abstract Algorithm<List<PermutationSolution<Integer>>> getAlgorithm();
-
     public List<List<String>> run() {
-        Algorithm<List<PermutationSolution<Integer>>> algorithm = getAlgorithm();
+        Algorithm<List<PermutationSolution<Integer>>> algorithm = this.algorithm.get();
 
         long computingTime = execute(algorithm);
 
@@ -33,11 +31,11 @@ public abstract class MusicPlaylistContinuationRunner
         log.info("> POPULATION SIZE: " + population.size());
 
         return population.stream()
-            .map(solution -> problem.getTrackIds(solution.getVariables()))
+            .map(solution -> this.algorithm.getProblem().getTrackIds(solution.getVariables()))
             .collect(Collectors.toList());
     }
 
-    private long execute(Algorithm<?> algorithm) {
+    private static long execute(Algorithm<?> algorithm) {
         long start = System.currentTimeMillis();
 
         Thread thread = new Thread(algorithm);
@@ -51,5 +49,4 @@ public abstract class MusicPlaylistContinuationRunner
 
         return System.currentTimeMillis() - start;
     }
-
 }

@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class Task {
 
     public enum Type {
-        DOWNLOAD_SPOTIFY_DATA, IMPORT_DATA, MAKE_RECOMMENDATIONS, EVALUATE_SAMPLES
+        DOWNLOAD_SPOTIFY_DATA, IMPORT_DATA, MAKE_RECOMMENDATIONS, EVALUATE_SAMPLES, CONDUCT_STUDY
     }
 
     private final String name;
@@ -35,7 +35,7 @@ public abstract class Task {
             finish();
         }
 
-        log("FINISH - " + (System.currentTimeMillis() - start) + "s");
+        log("FINISH - " + (System.currentTimeMillis() - start) + "ms");
     }
 
     protected void init() throws Exception {}

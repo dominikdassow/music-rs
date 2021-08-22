@@ -1,9 +1,10 @@
 package de.dominikdassow.musicrs.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * FixedBaseList represents a List that has base elements at fixed positions
@@ -24,8 +25,8 @@ public class FixedBaseList<T> {
      * Creates a List without any base elements.
      */
     public FixedBaseList() {
-        this.base = new HashMap<>();
-        this.elements = new HashMap<>();
+        this.base = new ConcurrentHashMap<>();
+        this.elements = new ConcurrentHashMap<>();
     }
 
     /**
@@ -37,9 +38,19 @@ public class FixedBaseList<T> {
         if (base.containsKey(null)) throw new IllegalArgumentException();
         if (base.keySet().stream().anyMatch(key -> key < 0)) throw new IllegalArgumentException();
 
-        this.base = base;
-        this.elements = new HashMap<>(base);
+        this.base = new ConcurrentHashMap<>(base);
+        this.elements = new ConcurrentHashMap<>(base);
     }
+
+//    /**
+//     * Creates a List with the specifies base elements.
+//     *
+//     * @param base The base elements with their fixed positions.
+//     */
+//    public FixedBaseList(FixedBaseList<T> baseList, List<T> elements) {
+//        this.base = new ConcurrentHashMap<>(baseList.base);
+//        this.elements = new ConcurrentHashMap<>(base);
+//    }
 
     /**
      * Adds an element to the List at the first position that's not taken by any base element.
@@ -69,7 +80,7 @@ public class FixedBaseList<T> {
      * @return The List of elements ordered by its positions.
      */
     public List<T> values() {
-        return List.copyOf(elements.values());
+        return new ArrayList<>(elements.values());
     }
 
     @Override

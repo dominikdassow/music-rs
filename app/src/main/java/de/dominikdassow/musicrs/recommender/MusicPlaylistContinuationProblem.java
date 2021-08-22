@@ -21,7 +21,8 @@ public class MusicPlaylistContinuationProblem
     extends AbstractGenericProblem<PermutationSolution<Integer>>
     implements PermutationProblem<PermutationSolution<Integer>> {
 
-    private final FixedBaseList<String> solutionTracks;
+    private final Map<Integer, String> tracks;
+    // private final FixedBaseList<String> solutionTracks;
     private final List<String> candidateTracks;
     private final List<Objective> objectives;
 
@@ -30,7 +31,8 @@ public class MusicPlaylistContinuationProblem
         Map<Integer, String> tracks,
         List<SimilarTracksList> similarTracks) {
 
-        solutionTracks = new FixedBaseList<>(tracks);
+        this.tracks = tracks;
+        // solutionTracks = new FixedBaseList<>(tracks);
 
         candidateTracks = new ArrayList<>(new HashSet<>() {{
             similarTracks.forEach(list -> addAll(list.getTracks()));
@@ -44,7 +46,7 @@ public class MusicPlaylistContinuationProblem
 
         setNumberOfVariables(tracks.size() + candidateTracks.size());
         setNumberOfObjectives(objectives.size());
-        setName("MusicPlaylistContinuationProblem");
+        setName("MPC");
     }
 
     @Override
@@ -59,14 +61,21 @@ public class MusicPlaylistContinuationProblem
 
     @Override
     public void evaluate(PermutationSolution<Integer> solution) {
-        solutionTracks.reset();
+        final FixedBaseList<String> solutionTracks = new FixedBaseList<>(tracks);
 
+//        final FixedBaseList<String> solutionTracks = new FixedBaseList<>(this.solutionTracks,
+//            solution.getVariables().stream().map(candidateTracks::get).collect(Collectors.toList()));
+
+//        solutionTracks.reset();
+//
         solution.getVariables()
             .forEach(index -> solutionTracks.add(candidateTracks.get(index)));
 
         for (int i = 0; i < objectives.size(); i++) {
             // TODO: Constant
-            solution.setObjective(i, objectives.get(i).evaluate(solutionTracks.values().subList(0, 500)));
+            List<String> values = solutionTracks.values();
+            if (values.size() < 500) log.info(i + " :: " + values.size());
+            solution.setObjective(i, objectives.get(i).evaluate(values.subList(0, 500)));
         }
     }
 

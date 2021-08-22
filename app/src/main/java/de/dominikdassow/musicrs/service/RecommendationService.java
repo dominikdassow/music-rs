@@ -3,8 +3,8 @@ package de.dominikdassow.musicrs.service;
 import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
-import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationRunner;
+import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
 import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.recommender.algorithm.NSGAII;
 import de.dominikdassow.musicrs.recommender.engine.SimilarPlaylistsEngine;
@@ -92,8 +92,9 @@ public class RecommendationService {
 
             Map<AlgorithmConfiguration, MusicPlaylistContinuationRunner> runners = new HashMap<>() {{
                 algorithmConfigurations.forEach(configuration -> {
-                    if (configuration instanceof AlgorithmConfiguration.NSGAII) {
-                        put(configuration, new NSGAII(problem, (AlgorithmConfiguration.NSGAII) configuration));
+                    if (configuration instanceof NSGAII.Configuration) {
+                        put(configuration, new MusicPlaylistContinuationRunner(
+                            new NSGAII(problem, (NSGAII.Configuration) configuration)));
                     }
                 });
             }};

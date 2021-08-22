@@ -1,7 +1,6 @@
 package de.dominikdassow.musicrs.recommender.objective;
 
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 

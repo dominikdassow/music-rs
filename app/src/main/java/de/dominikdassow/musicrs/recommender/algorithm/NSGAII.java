@@ -1,7 +1,10 @@
 package de.dominikdassow.musicrs.recommender.algorithm;
 
+import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationAlgorithm;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
-import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationRunner;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.uma.jmetal.algorithm.Algorithm;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
@@ -16,18 +19,15 @@ import org.uma.jmetal.util.comparator.RankingAndCrowdingDistanceComparator;
 import java.util.List;
 
 public class NSGAII
-    extends MusicPlaylistContinuationRunner {
+    implements MusicPlaylistContinuationAlgorithm {
 
-    private final AlgorithmConfiguration.NSGAII configuration;
+    private final MusicPlaylistContinuationProblem problem;
 
-    public NSGAII(MusicPlaylistContinuationProblem problem, AlgorithmConfiguration.NSGAII configuration) {
-        super(problem);
+    private final Algorithm<List<PermutationSolution<Integer>>> algorithm;
 
-        this.configuration = configuration;
-    }
+    public NSGAII(MusicPlaylistContinuationProblem problem, Configuration configuration) {
+        this.problem = problem;
 
-    @Override
-    public Algorithm<List<PermutationSolution<Integer>>> getAlgorithm() {
         final CrossoverOperator<PermutationSolution<Integer>> crossover
             = new PMXCrossover(configuration.getCrossoverProbability());
 
@@ -37,9 +37,51 @@ public class NSGAII
         final SelectionOperator<List<PermutationSolution<Integer>>, PermutationSolution<Integer>> selection
             = new BinaryTournamentSelection<>(new RankingAndCrowdingDistanceComparator<>());
 
-        return new NSGAIIBuilder<>(problem, crossover, mutation, configuration.getPopulationSize())
+        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, configuration.getPopulationSize())
             .setSelectionOperator(selection)
             .setMaxEvaluations(configuration.getMaxEvaluations())
             .build();
+    }
+
+    @Override
+    public Algorithm<List<PermutationSolution<Integer>>> get() {
+        return algorithm;
+    }
+
+    @Override
+    public MusicPlaylistContinuationProblem getProblem() {
+        return problem;
+    }
+
+    @Builder
+    @RequiredArgsConstructor
+    public static
+    class Configuration
+        implements AlgorithmConfiguration {
+
+        @Getter
+        private final int populationSize;
+
+        @Getter
+        private final int maxEvaluations;
+
+        @Getter
+        private final double crossoverProbability;
+
+        @Getter
+        private final double mutationProbability;
+
+        public String getName() {
+            return "Configuration"
+                + "__" + populationSize
+                + "__" + maxEvaluations
+                + "__" + String.valueOf(crossoverProbability).replace('.', '_')
+                + "__" + String.valueOf(mutationProbability).replace('.', '_');
+        }
+
+        @Override
+        public MusicPlaylistContinuationAlgorithm createAlgorithmFor(MusicPlaylistContinuationProblem problem) {
+            return new NSGAII(problem, this);
+        }
     }
 }

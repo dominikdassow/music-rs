@@ -45,7 +45,7 @@ public class ImportDataTask
         // TODO: Currently not performing well at all when slicesPerBatch > 5 (only w/ audio features)
         // TODO: Parallel stream are not better right now. Why?
 
-        final int slices = 100; // TODO
+        final int slices = 1_000; // TODO
         final int slicesOffset = 0;
         final int slicesPerBatch = 5; // TODO
         final int sliceSize = 1_000;
@@ -61,7 +61,7 @@ public class ImportDataTask
             log.info("> SLICE: " + slice);
 
             JsonNode root = objectMapper
-                .readTree(new File("data/mpd/mpd.slice." + slice + ".json"));
+                .readTree(new File("../data/mpd/mpd.slice." + slice + ".json"));
 
             process(objectMapper.treeToValue(root.get("playlists"), PlaylistJson[].class))
                 .forEach(playlist -> {
@@ -82,11 +82,24 @@ public class ImportDataTask
             }
         }
 
-        JsonNode root = objectMapper
-            .readTree(new File("data/challenge/challenge_set.json"));
+        final List<Playlist> challengePlaylists = new ArrayList<>();
+        final Map<String, Track> challengePlaylistsTracks = new HashMap<>();
 
-        session.storePlaylists(process(objectMapper.treeToValue(root.get("playlists"), PlaylistJson[].class))
-            .collect(Collectors.toList()));
+        JsonNode root = objectMapper
+            .readTree(new File("../data/challenge/challenge_set.json"));
+
+        process(objectMapper.treeToValue(root.get("playlists"), PlaylistJson[].class))
+            .forEach(playlist -> {
+                challengePlaylists.add(playlist);
+                playlist.getTracks().values()
+                    .forEach(track -> challengePlaylistsTracks.putIfAbsent(track.getId(), track));
+            });
+
+        session.storePlaylists(challengePlaylists);
+        session.storeTracks(challengePlaylistsTracks);
+
+        challengePlaylists.clear();
+        challengePlaylistsTracks.clear();
     }
 
     @Override

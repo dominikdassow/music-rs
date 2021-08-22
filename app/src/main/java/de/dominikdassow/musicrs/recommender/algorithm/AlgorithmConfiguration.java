@@ -1,28 +1,11 @@
 package de.dominikdassow.musicrs.recommender.algorithm;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
+import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationAlgorithm;
+import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
 
 public interface AlgorithmConfiguration {
 
-    @Builder
-    @ToString(includeFieldNames = false)
-    @RequiredArgsConstructor
-    class NSGAII
-        implements AlgorithmConfiguration {;
+    String getName();
 
-        @Getter
-        private final int populationSize;
-
-        @Getter
-        private final int maxEvaluations;
-
-        @Getter
-        private final double crossoverProbability;
-
-        @Getter
-        private final double mutationProbability;
-    }
+    MusicPlaylistContinuationAlgorithm createAlgorithmFor(MusicPlaylistContinuationProblem problem);
 }

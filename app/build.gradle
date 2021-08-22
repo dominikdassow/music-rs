@@ -13,6 +13,7 @@ dependencies {
     implementation "org.uma.jmetal:jmetal-core:5.10"
     implementation "org.uma.jmetal:jmetal-problem:5.10"
     implementation "org.uma.jmetal:jmetal-algorithm:5.10"
+    implementation "org.uma.jmetal:jmetal-lab:5.10"
     implementation "org.ranksys:RankSys-core:0.4.3"
     implementation "org.ranksys:RankSys-fast:0.4.3"
     implementation "org.ranksys:RankSys-nn:0.4.3"

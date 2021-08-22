@@ -13,8 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jooq.lambda.tuple.Tuple;
 import org.jooq.lambda.tuple.Tuple3;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -22,7 +22,7 @@ public class SimilarTracksEngine {
 
     private final ItemDistanceModel<String> distanceModel;
 
-    private final Map<String, Double> distances = new HashMap<>();
+    private final Map<String, Double> distances = new ConcurrentHashMap<>();
 
     public SimilarTracksEngine() {
         log.info("SimilarTracksEngine()");
@@ -55,7 +55,7 @@ public class SimilarTracksEngine {
         final FastFeatureData<String, String, Double> data
             = SimpleFastFeatureData.load(trackFeatureValues, trackIndex, trackFeatureIndex);
 
-        log.info("Data :: " + data.numFeatures());
+        log.info("Data :: " + data.numItems() + " :: " + data.numFeatures());
 
         distanceModel = new CosineFeatureItemDistanceModel<>(data);
     }
