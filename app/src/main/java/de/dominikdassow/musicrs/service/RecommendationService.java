@@ -16,6 +16,7 @@ import org.jooq.lambda.tuple.Tuple;
 import org.jooq.lambda.tuple.Tuple3;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -76,18 +77,38 @@ public class RecommendationService {
         List<Result> recommendations = new ArrayList<>();
 
         playlists.forEach(playlist -> {
-            final List<SimilarTracksList> similarTracksLists
-                = similarPlaylistsEngine.getSimilarTracksFor(playlist, 500); // TODO: Constant
+            Map<Integer, String> tracks
+                = DatabaseService.readPlaylistTracks(playlist);
 
-            log.info("# SIMILAR PLAYLISTS: " + similarTracksLists.size());
-            log.info("## SIMILAR PLAYLIST TRACKS: " + similarTracksLists.stream()
+            List<SimilarTracksList> similarTracksLists
+                = DatabaseService.readSimilarTracksLists(playlist);
+
+            long numberOfUniqueTracks = similarTracksLists.stream()
+                .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
+                .distinct()
+                .count();
+
+            // TODO: Constant
+            if (numberOfUniqueTracks < 500) {
+                log.trace("# [" + playlist + "] SIMILAR PLAYLISTS :: GENERATE");
+
+                if (tracks.isEmpty()) {
+                    similarTracksLists = similarPlaylistsEngine
+                        .getRandomSimilarTracksFor(playlist, 500); // TODO: Constant
+                } else {
+                    similarTracksLists = similarPlaylistsEngine
+                        .getSimilarTracksFor(playlist, 500); // TODO: Constant
+                }
+            }
+
+            log.info("# [" + playlist + "] SIMILAR PLAYLISTS :: "
+                + similarTracksLists.size() + " :: "
+                + similarTracksLists.stream()
                 .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
                 .distinct()
                 .count());
 
-            Map<Integer, String> tracks = DatabaseService.readPlaylistTracks(playlist);
-
-            final MusicPlaylistContinuationProblem problem
+            MusicPlaylistContinuationProblem problem
                 = new MusicPlaylistContinuationProblem(similarTracksEngine, tracks, similarTracksLists);
 
             Map<AlgorithmConfiguration, MusicPlaylistContinuationRunner> runners = new HashMap<>() {{
@@ -100,7 +121,7 @@ public class RecommendationService {
             }};
 
             runners.forEach((configuration, runner) -> {
-                log.info("RUN: " + configuration.toString());
+                log.info("RUN: " + configuration.getName());
 
                 List<List<String>> results = runner.run();
 

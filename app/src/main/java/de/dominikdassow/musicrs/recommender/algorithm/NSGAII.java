@@ -72,7 +72,7 @@ public class NSGAII
         private final double mutationProbability;
 
         public String getName() {
-            return "Configuration"
+            return "NSGAII"
                 + "__" + populationSize
                 + "__" + maxEvaluations
                 + "__" + String.valueOf(crossoverProbability).replace('.', '_')

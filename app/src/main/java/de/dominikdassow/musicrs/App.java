@@ -15,6 +15,9 @@ public class App {
     private static final ImportDataTask importDataTask
         = new ImportDataTask();
 
+    private static final GenerateSimilarTracksListsTask generateSimilarTracksListsTask
+        = new GenerateSimilarTracksListsTask();
+
     private static final MakeRecommendationsTask makeRecommendations
         = new MakeRecommendationsTask();
 
@@ -39,9 +42,13 @@ public class App {
                 importDataTask
                     .run();
                 break;
+            case GENERATE_SIMILAR_TRACKS_LISTS:
+                generateSimilarTracksListsTask
+                    .run();
+                break;
             case MAKE_RECOMMENDATIONS:
                 makeRecommendations
-                    .forPlaylists(1_000_800)
+                    .forPlaylists(1_000_069, 1_003_178, 1_006_778, 1_008_706, 1002349, 1020917)
                     .using(
                         NSGAII.Configuration.builder()
                             .populationSize(100).maxEvaluations(5_000)
@@ -63,7 +70,8 @@ public class App {
                 break;
             case CONDUCT_STUDY:
                 conductStudyTask
-                    .forPlaylists(1_003_178, 1_006_778) // 1_003_178, 1_003_183, 1_026_297, 1_034_933, 1_006_778
+                    // 0, 1, 5, 10, 25, 100 (number of tracks)
+                    .forPlaylists(1_000_069, 1_003_178, 1_006_778, 1_008_706, 1002349, 1020917)
                     .using(
                         NSGAII.Configuration.builder()
                             .populationSize(100).maxEvaluations(5_000)

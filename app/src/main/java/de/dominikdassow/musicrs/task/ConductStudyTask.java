@@ -4,7 +4,6 @@ import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationAlgorithm;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
 import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
-import de.dominikdassow.musicrs.recommender.engine.SimilarPlaylistsEngine;
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
 import de.dominikdassow.musicrs.service.DatabaseService;
 import de.dominikdassow.musicrs.study.GenerateTrackIdsForBestParetoSets;
@@ -26,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Slf4j
 public class ConductStudyTask
@@ -36,12 +36,11 @@ public class ConductStudyTask
 
     private static final int INDEPENDENT_RUNS = 2; // TODO
 
-    private SimilarPlaylistsEngine similarPlaylistsEngine;
     private SimilarTracksEngine similarTracksEngine;
 
-    private List<AlgorithmConfiguration> algorithmConfigurations;
-
     private Set<Integer> playlists;
+
+    private List<AlgorithmConfiguration> algorithmConfigurations;
 
     public ConductStudyTask() {
         super("Conduct Study");
@@ -61,7 +60,6 @@ public class ConductStudyTask
 
     @Override
     protected void init() {
-        similarPlaylistsEngine = new SimilarPlaylistsEngine();
         similarTracksEngine = new SimilarTracksEngine();
     }
 
@@ -102,29 +100,44 @@ public class ConductStudyTask
 //            .createHTMLPageForEachIndicator();
     }
 
-    private List<ExperimentProblem<PermutationSolution<Integer>>>
-    getProblems() {
-        return new ArrayList<>() {{
-            playlists.forEach(playlist -> {
-                // TODO: Generate similar playlists in its own task -> Only read similar playlists list here
-                final List<SimilarTracksList> similarTracksLists
-                    = similarPlaylistsEngine.getSimilarTracksFor(playlist, 500); // TODO: Constant
+    private List<ExperimentProblem<PermutationSolution<Integer>>> getProblems() {
+        final Stream<Integer> playlists = this.playlists == null
+            ? DatabaseService.readAllPlaylistChallenges()
+            : this.playlists.stream();
 
-                log.info("# [" + playlist + "] SIMILAR PLAYLISTS: "
+        return new ArrayList<>() {{
+            playlists.parallel().forEach(playlist -> {
+                List<SimilarTracksList> similarTracksLists
+                    = DatabaseService.readSimilarTracksLists(playlist);
+
+                long numberOfUniqueTracks = similarTracksLists.stream()
+                    .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
+                    .distinct()
+                    .count();
+
+                // TODO: Constant
+                if (numberOfUniqueTracks < 500) {
+                    log.warn("# [" + playlist + "] SIMILAR PLAYLISTS :: Not enough unique tracks: "
+                        + numberOfUniqueTracks);
+
+                    return;
+                }
+
+                log.info("# [" + playlist + "] SIMILAR PLAYLISTS :: "
                     + similarTracksLists.size() + " :: "
                     + similarTracksLists.stream()
                     .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
                     .distinct()
                     .count());
 
-                Map<Integer, String> tracks = DatabaseService.readPlaylistTracks(playlist);
+                Map<Integer, String> tracks
+                    = DatabaseService.readPlaylistTracks(playlist);
 
-                final ExperimentProblem<PermutationSolution<Integer>> problem = new ExperimentProblem<>(
-                    new MusicPlaylistContinuationProblem(similarTracksEngine, tracks, similarTracksLists),
-                    "MPC_" + playlist
-                ).setReferenceFront("MPC_" + playlist + ".csv");
+                MusicPlaylistContinuationProblem problem =
+                    new MusicPlaylistContinuationProblem(similarTracksEngine, tracks, similarTracksLists);
 
-                add(problem);
+                add(new ExperimentProblem<>(problem, "MPC_" + playlist)
+                    .setReferenceFront("MPC_" + playlist + ".csv"));
             });
         }};
     }

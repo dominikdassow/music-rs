@@ -6,7 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class Task {
 
     public enum Type {
-        DOWNLOAD_SPOTIFY_DATA, IMPORT_DATA, MAKE_RECOMMENDATIONS, EVALUATE_SAMPLES, CONDUCT_STUDY
+        DOWNLOAD_SPOTIFY_DATA,
+        IMPORT_DATA,
+        GENERATE_SIMILAR_TRACKS_LISTS,
+        MAKE_RECOMMENDATIONS,
+        EVALUATE_SAMPLES,
+        CONDUCT_STUDY,
     }
 
     private final String name;

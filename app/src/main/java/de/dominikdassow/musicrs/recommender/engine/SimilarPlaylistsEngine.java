@@ -16,10 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.jooq.lambda.tuple.Tuple;
 import org.jooq.lambda.tuple.Tuple3;
 import org.ranksys.core.util.tuples.Tuple2id;
+import org.ranksys.core.util.tuples.Tuple2od;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -86,7 +88,40 @@ public class SimilarPlaylistsEngine {
         UserNeighborhood<Integer> neighborhood
             = new SimilarPlaylistNeighborhood(similarity, minNumberOfTracks);
 
-        return neighborhood.getNeighbors(playlist)
+        return getSimilarTracksListsFromNeighbors(neighborhood.getNeighbors(playlist));
+    }
+
+    public List<SimilarTracksList> getRandomSimilarTracksFor(Integer playlist, int minNumberOfTracks) {
+        List<Tuple2od<Integer>> neighbors = new ArrayList<>();
+
+        int max = (int) DatabaseService
+            .readStore(DatabaseService.Store.PLAYLIST)
+            .filter(data -> Integer.parseInt(data.split(DatabaseService.DELIMITER)[0]) < 1_000_000) // TODO: Constant
+            .count();
+
+        int k = minNumberOfTracks / 250; // TODO: Constant
+        boolean accepted = false;
+
+        while (!accepted) {
+            neighbors.clear();
+
+            new Random(playlist).ints(0, max)
+                .distinct()
+                .limit(k)
+                .forEach(i -> neighbors.add(new Tuple2od<>(i, 0.1 + (0.5 - 0.1) * new Random(i).nextDouble())));
+
+            k += 1;
+            accepted = !neighbors.isEmpty() && DatabaseService
+                .readNumberOfUniquePlaylistTracks(neighbors.stream()
+                    .map(Tuple2od::v1)
+                    .collect(Collectors.toList())) >= minNumberOfTracks;
+        }
+
+        return getSimilarTracksListsFromNeighbors(neighbors.stream());
+    }
+
+    private static List<SimilarTracksList> getSimilarTracksListsFromNeighbors(Stream<Tuple2od<Integer>> neighbors) {
+        return neighbors
             .map(result -> new SimilarTracksList(new ArrayList<>(
                 DatabaseService.readPlaylistTracks(result.v1).values()
             )).withSimilarity(result.v2))

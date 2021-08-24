@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.service;
 
+import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
 import de.dominikdassow.musicrs.model.feature.TrackFeature;
@@ -30,6 +31,7 @@ public class DatabaseService {
         PLAYLIST_FEATURE("../data/store/" + STORE_VERSION + "/playlist-feature.csv"),
         TRACK("../data/store/" + STORE_VERSION + "/track.csv"),
         TRACK_FEATURE("../data/store/" + STORE_VERSION + "/track-feature.csv"),
+        SIMILAR_TRACKS_LIST("../data/store/" + STORE_VERSION + "/similar-tracks-list.csv"),
         TRACK_AUDIO_FEATURE("../data/store/tracks-audio-feature.csv");
 
         public final String file;
@@ -59,6 +61,13 @@ public class DatabaseService {
 
             return Stream.empty();
         }
+    }
+
+    public static Stream<Integer> readAllPlaylistChallenges() {
+        return readStore(DatabaseService.Store.PLAYLIST)
+            .map(data -> Integer.parseInt(data.split(DELIMITER)[0]))
+            .filter(data -> data >= 1_000_000) // TODO: Constant
+            .distinct();
     }
 
     public static Map<Integer, String> readPlaylistTracks(Integer playlist) {
@@ -121,6 +130,17 @@ public class DatabaseService {
                 .artistId(data[1])
                 .albumId(data[2])
                 .build())
+            .collect(Collectors.toList());
+    }
+
+    public static List<SimilarTracksList> readSimilarTracksLists(Integer playlist) {
+        return readStore(Store.SIMILAR_TRACKS_LIST)
+            .filter(data -> data.startsWith(playlist + DELIMITER))
+            .map(data -> data.split(DELIMITER))
+            .map(data -> new SimilarTracksList(
+                Arrays.asList(data).subList(2, data.length),
+                Double.parseDouble(data[1]))
+            )
             .collect(Collectors.toList());
     }
 
