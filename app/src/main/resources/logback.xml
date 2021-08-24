@@ -1,16 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <timestamp key="start" datePattern="yyyy-MM-dd_HH-mm-ss"/>
+
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+        <encoder>
             <pattern>%white(%d{ISO8601}) %highlight(%-5level) %yellow(%C{2.}): %msg%n%throwable</pattern>
         </encoder>
     </appender>
 
+    <appender name="File" class="ch.qos.logback.core.FileAppender">
+        <file>logs/app.${start}.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{ISO8601} %-5level %C{2.}: %msg%n%throwable</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
+
     <root level="warn">
         <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
     </root>
 
     <logger name="de.dominikdassow" level="trace" additivity="false">
         <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
+    </logger>
+
+    <logger name="org.uma.jmetal" level="info" additivity="false">
+        <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
     </logger>
 </configuration>

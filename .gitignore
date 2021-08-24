@@ -4,7 +4,7 @@
 /data/store/
 /data/study/
 
-jMetal.log
+logs/
 
 ### GRADLE ###
 .gradle
