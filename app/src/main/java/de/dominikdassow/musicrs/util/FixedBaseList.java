@@ -42,16 +42,6 @@ public class FixedBaseList<T> {
         this.elements = new ConcurrentHashMap<>(base);
     }
 
-//    /**
-//     * Creates a List with the specifies base elements.
-//     *
-//     * @param base The base elements with their fixed positions.
-//     */
-//    public FixedBaseList(FixedBaseList<T> baseList, List<T> elements) {
-//        this.base = new ConcurrentHashMap<>(baseList.base);
-//        this.elements = new ConcurrentHashMap<>(base);
-//    }
-
     /**
      * Adds an element to the List at the first position that's not taken by any base element.
      *
