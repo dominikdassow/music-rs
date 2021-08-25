@@ -1,6 +1,8 @@
 package de.dominikdassow.musicrs;
 
+import de.dominikdassow.musicrs.recommender.algorithm.NOOP;
 import de.dominikdassow.musicrs.recommender.algorithm.NSGAII;
+import de.dominikdassow.musicrs.recommender.algorithm.SMSEMOA;
 import de.dominikdassow.musicrs.task.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,6 +75,9 @@ public class App {
                     // 0, 1, 5, 10, 25, 100 (number of tracks)
                     .forPlaylists(1_000_069, 1_003_178, 1_006_778, 1_008_706, 1002349, 1020917)
                     .using(
+                        NOOP.Configuration.builder()
+                            .populationSize(100)
+                            .build(),
                         NSGAII.Configuration.builder()
                             .populationSize(100).maxEvaluations(5_000)
                             .crossoverProbability(0.7).mutationProbability(0.1)
@@ -82,6 +87,18 @@ public class App {
                             .crossoverProbability(0.7).mutationProbability(0.2)
                             .build(),
                         NSGAII.Configuration.builder()
+                            .populationSize(100).maxEvaluations(5_000)
+                            .crossoverProbability(0.7).mutationProbability(0.3)
+                            .build(),
+                        SMSEMOA.Configuration.builder()
+                            .populationSize(100).maxEvaluations(5_000)
+                            .crossoverProbability(0.7).mutationProbability(0.1)
+                            .build(),
+                        SMSEMOA.Configuration.builder()
+                            .populationSize(100).maxEvaluations(5_000)
+                            .crossoverProbability(0.7).mutationProbability(0.2)
+                            .build(),
+                        SMSEMOA.Configuration.builder()
                             .populationSize(100).maxEvaluations(5_000)
                             .crossoverProbability(0.7).mutationProbability(0.3)
                             .build()
