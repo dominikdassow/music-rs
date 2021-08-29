@@ -1,17 +1,13 @@
 package de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util;
 
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.MACO;
-import lombok.extern.slf4j.Slf4j;
-import org.jooq.lambda.tuple.Tuple2;
+import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.uma.jmetal.solution.Solution;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
-@Slf4j
 public class Ant<S extends Solution<T>, T> {
 
     private final MACO<S, T> algorithm;
@@ -25,39 +21,23 @@ public class Ant<S extends Solution<T>, T> {
     public S createSolution() {
         S solution = algorithm.getProblem().createSolution();
 
-        algorithm.getProblem().evaluate(solution);
-
-        CandidateDistribution<T> candidateDistribution = createCandidateDistribution(solution);
-        List<T> candidates = new ArrayList<>();
+        List<T> partialSolution = new ArrayList<>(solution.getNumberOfVariables());
+        List<T> candidates = new LinkedList<>(solution.getVariables());
 
         for (int i = 0; i < solution.getNumberOfVariables(); i++) {
-            candidates.add(candidateDistribution.getNext(candidates));
+            EnumeratedDistribution<T> distribution
+                = colony.createCandidateDistribution(partialSolution, candidates);
+
+            T candidate = distribution.sample();
+
+            partialSolution.add(candidate);
+            candidates.remove(candidate);
         }
 
         for (int i = 0; i < solution.getNumberOfVariables(); i++) {
-            solution.setVariable(i, candidates.get(i));
+            solution.setVariable(i, partialSolution.get(i));
         }
 
         return solution;
-    }
-
-    private CandidateDistribution<T> createCandidateDistribution(S solution) {
-        Map<T, Double> pheromoneFactors = colony.getPheromoneFactors(solution);
-        Map<T, Double> heuristicFactors = colony.getHeuristicFactors(solution);
-
-        double summedCandidatesFactor = solution.getVariables().stream()
-            .mapToDouble(candidate -> pheromoneFactors.get(candidate) * heuristicFactors.get(candidate))
-            .sum();
-
-        Map<T, Double> probabilities = solution.getVariables().stream()
-            .collect(Collectors.toMap(Function.identity(),
-                candidate -> (pheromoneFactors.get(candidate) * heuristicFactors.get(candidate))
-                    / summedCandidatesFactor));
-
-        List<Tuple2<T, Double>> candidatesWithProbability = solution.getVariables().stream()
-            .map(candidate -> new Tuple2<>(candidate, probabilities.get(candidate)))
-            .collect(Collectors.toList());
-
-        return new CandidateDistribution<>(candidatesWithProbability);
     }
 }

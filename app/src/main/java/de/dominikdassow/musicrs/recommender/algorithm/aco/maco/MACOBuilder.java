@@ -1,11 +1,9 @@
 package de.dominikdassow.musicrs.recommender.algorithm.aco.maco;
 
-import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.algorithm.AlgorithmBuilder;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
 
-@Slf4j
 public class MACOBuilder<S extends Solution<T>, T>
     implements AlgorithmBuilder<MACO<S, T>> {
 
@@ -67,8 +65,6 @@ public class MACOBuilder<S extends Solution<T>, T>
 
     @Override
     public MACO<S, T> build() {
-        log.info("build(), variant=" + variant);
-
         switch (variant) {
             case 1:
                 return new MACO1<>(problem, numberOfAnts, numberOfCycles,

@@ -2,6 +2,8 @@ package de.dominikdassow.musicrs.recommender.algorithm.aco.maco;
 
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.Colony;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.PheromoneTrail;
+import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.colony.MultiObjectiveColonyWithMultiplePheromoneTrails;
+import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.colony.SingleObjectiveColony;
 import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
@@ -35,10 +37,10 @@ public class MACO1<S extends Solution<T>, T>
                 pheromoneTrails.add(this);
             }};
 
-            colonies.add(new Colony.SingleObjective<>(algorithm, i, pheromoneTrail));
+            colonies.add(new SingleObjectiveColony<>(algorithm, i, pheromoneTrail));
         });
 
-        colonies.add(new Colony.MultiObjective.MultiplePheromoneTrails<>(algorithm, pheromoneTrails, aggregation));
+        colonies.add(new MultiObjectiveColonyWithMultiplePheromoneTrails<>(algorithm, pheromoneTrails, aggregation));
 
         return colonies;
     }

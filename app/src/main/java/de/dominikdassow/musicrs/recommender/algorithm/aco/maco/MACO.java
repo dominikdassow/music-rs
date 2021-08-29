@@ -3,7 +3,6 @@ package de.dominikdassow.musicrs.recommender.algorithm.aco.maco;
 import com.google.common.collect.ImmutableList;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.AbstractAntColonyOptimizationAlgorithm;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.Colony;
-import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.SolutionListUtils;
@@ -11,7 +10,6 @@ import org.uma.jmetal.util.SolutionListUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
 public abstract class MACO<S extends Solution<T>, T>
     extends AbstractAntColonyOptimizationAlgorithm<S, List<S>> {
 
@@ -43,7 +41,7 @@ public abstract class MACO<S extends Solution<T>, T>
         this.numberOfCycles = numberOfCycles;
         this.alpha = alpha;
         this.beta = beta;
-        this.p = p; // TODO: Assert 0 <= p <= 1
+        this.p = p;
 
         candidates = ImmutableList.copyOf(problem.createSolution().getVariables());
     }

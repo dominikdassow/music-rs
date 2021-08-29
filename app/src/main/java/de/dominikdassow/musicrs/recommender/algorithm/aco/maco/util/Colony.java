@@ -1,18 +1,16 @@
 package de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util;
 
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.MACO;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.distribution.EnumeratedDistribution;
+import org.apache.commons.math3.util.Pair;
 import org.uma.jmetal.solution.Solution;
-import org.uma.jmetal.util.SolutionListUtils;
-import org.uma.jmetal.util.comparator.ObjectiveComparator;
-import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@Slf4j
 public abstract class Colony<S extends Solution<T>, T> {
 
     protected final MACO<S, T> algorithm;
@@ -44,22 +42,63 @@ public abstract class Colony<S extends Solution<T>, T> {
 
     public abstract void updatePheromoneTrails();
 
-    protected abstract double getPheromoneFactor(S solution, T candidate);
+    protected abstract double getPheromoneFactor(T candidate);
 
-    protected abstract double getHeuristicFactor(S solution, T candidate);
+    protected abstract double getHeuristicFactor(S solution);
 
-    protected Map<T, Double> getPheromoneFactors(S solution) {
-        return solution.getVariables().stream().collect(Collectors.toMap(
+    protected EnumeratedDistribution<T> createCandidateDistribution(List<T> partialSolution, List<T> candidates) {
+        Map<T, S> solutions = new ConcurrentHashMap<>() {{
+            candidates.parallelStream().forEach(candidate -> {
+                S solution = algorithm.getProblem().createSolution();
+
+                for (int i = 0; i < solution.getNumberOfVariables(); i++) {
+                    solution.setVariable(i, null);
+                }
+
+                for (int i = 0; i < partialSolution.size(); i++) {
+                    solution.setVariable(i, partialSolution.get(i));
+                }
+
+                solution.setVariable(partialSolution.size(), candidate);
+
+                algorithm.getProblem().evaluate(solution);
+
+                put(candidate, solution);
+            });
+        }};
+
+        Map<T, Double> pheromoneFactors = solutions.keySet().stream().collect(Collectors.toMap(
             Function.identity(),
-            candidate -> algorithm.applyPheromoneFactorsWeight(getPheromoneFactor(solution, candidate)))
+            candidate -> algorithm.applyPheromoneFactorsWeight(getPheromoneFactor(candidate)))
         );
-    }
 
-    protected Map<T, Double> getHeuristicFactors(S solution) {
-        return solution.getVariables().stream().collect(Collectors.toMap(
-            Function.identity(),
-            candidate -> algorithm.applyHeuristicFactorsWeight(getHeuristicFactor(solution, candidate))
+        Map<T, Double> heuristicFactors = solutions.entrySet().stream().collect(Collectors.toMap(
+            Map.Entry::getKey,
+            entry -> algorithm.applyHeuristicFactorsWeight(getHeuristicFactor(entry.getValue()))
         ));
+
+        double summedCandidatesFactor = candidates.stream()
+            .mapToDouble(candidate -> pheromoneFactors.get(candidate) * heuristicFactors.get(candidate))
+            .sum();
+
+        Map<T, Double> probabilities = candidates.stream().collect(Collectors.toMap(
+            Function.identity(),
+            candidate -> {
+                double pheromoneFactor = pheromoneFactors.get(candidate);
+                double heuristicFactor = heuristicFactors.get(candidate);
+                double probability = (pheromoneFactor * heuristicFactor) / summedCandidatesFactor;
+
+                if (Double.isNaN(probability)) return Double.MIN_VALUE;
+
+                return probability;
+            }
+        ));
+
+        List<Pair<T, Double>> candidatesWithProbability = candidates.stream()
+            .map(candidate -> new Pair<>(candidate, probabilities.get(candidate)))
+            .collect(Collectors.toList());
+
+        return new EnumeratedDistribution<>(candidatesWithProbability);
     }
 
     protected void updatePossibleBestSolution(int objective, S solution) {
@@ -67,189 +106,5 @@ public abstract class Colony<S extends Solution<T>, T> {
             solution.getObjective(objective) > bestSolutions.get(objective).getObjective(objective);
 
         if (update) bestSolutions.put(objective, solution);
-    }
-
-    public static class SingleObjective<S extends Solution<T>, T>
-        extends Colony<S, T> {
-
-        private final int objective;
-        private final PheromoneTrail<S, T> pheromoneTrail;
-        private final Comparator<S> solutionComparator;
-
-        public SingleObjective(MACO<S, T> algorithm, int objective, PheromoneTrail<S, T> pheromoneTrail) {
-            super(algorithm);
-
-            this.objective = objective;
-            this.pheromoneTrail = pheromoneTrail;
-
-            solutionComparator = new ObjectiveComparator<>(objective);
-        }
-
-        @Override
-        public void initPheromoneTrails() {
-            pheromoneTrail.init();
-        }
-
-        @Override
-        public void updatePheromoneTrails() {
-            S bestSolution
-                = SolutionListUtils.findBestSolution(solutions, solutionComparator);
-
-            updatePossibleBestSolution(objective, bestSolution);
-
-            pheromoneTrail.update((component, value) -> {
-                value = algorithm.applyEvaporationFactor(value);
-
-                if (bestSolution.getVariables().contains(component)) {
-                    value += 1 / (1 + bestSolution.getObjective(objective)
-                        - bestSolutions.get(objective).getObjective(objective));
-                }
-
-                return value;
-            });
-        }
-
-        @Override
-        protected double getPheromoneFactor(S solution, T candidate) {
-            return pheromoneTrail.get(candidate);
-        }
-
-        @Override
-        protected double getHeuristicFactor(S solution, T candidate) {
-            return solution.getObjective(objective) / solution.getNumberOfVariables();
-        }
-    }
-
-    public static abstract class MultiObjective<S extends Solution<T>, T>
-        extends Colony<S, T> {
-
-        public MultiObjective(MACO<S, T> algorithm) {
-            super(algorithm);
-        }
-
-        public static class SinglePheromoneTrail<S extends Solution<T>, T>
-            extends Colony.MultiObjective<S, T> {
-
-            private final PheromoneTrail<S, T> pheromoneTrail;
-
-            public SinglePheromoneTrail(MACO<S, T> algorithm, PheromoneTrail<S, T> pheromoneTrail) {
-                super(algorithm);
-
-                this.pheromoneTrail = pheromoneTrail;
-            }
-
-            @Override
-            public void initPheromoneTrails() {
-                pheromoneTrail.init();
-            }
-
-            @Override
-            public void updatePheromoneTrails() {
-                IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
-                    List<S> nonDominatedSolutions
-                        = SolutionListUtils.getNonDominatedSolutions(solutions);
-
-                    nonDominatedSolutions
-                        .forEach(solution -> updatePossibleBestSolution(objective, solution));
-
-                    List<T> candidatesToReward = nonDominatedSolutions
-                        .stream().flatMap(nonDominatedSolution -> nonDominatedSolution.getVariables().stream())
-                        .collect(Collectors.toList());
-
-                    pheromoneTrail.update((candidate, value) -> {
-                        value = algorithm.applyEvaporationFactor(value);
-
-                        if (candidatesToReward.contains(candidate)) {
-                            value += 1;
-                        }
-
-                        return value;
-                    });
-                });
-            }
-
-            @Override
-            protected double getPheromoneFactor(S solution, T candidate) {
-                return pheromoneTrail.get(candidate);
-            }
-
-            @Override
-            protected double getHeuristicFactor(S solution, T candidate) {
-                double factor = IntStream.range(0, solution.getNumberOfObjectives())
-                    .mapToDouble(solution::getObjective)
-                    .sum();
-
-                return factor / solution.getNumberOfVariables();
-            }
-        }
-
-        public static class MultiplePheromoneTrails<S extends Solution<T>, T>
-            extends Colony.MultiObjective<S, T> {
-
-            private final List<PheromoneTrail<S, T>> pheromoneTrails;
-            private final MACO.PheromoneFactorAggregation aggregation;
-
-            public MultiplePheromoneTrails(
-                MACO<S, T> algorithm,
-                List<PheromoneTrail<S, T>> pheromoneTrails,
-                MACO.PheromoneFactorAggregation aggregation
-            ) {
-                super(algorithm);
-
-                this.pheromoneTrails = pheromoneTrails;
-                this.aggregation = aggregation;
-            }
-
-            @Override
-            public void initPheromoneTrails() {
-                pheromoneTrails.forEach(PheromoneTrail::init);
-            }
-
-            @Override
-            public void updatePheromoneTrails() {
-                IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
-                    S bestSolution
-                        = SolutionListUtils.findBestSolution(solutions, new ObjectiveComparator<>(objective));
-
-                    updatePossibleBestSolution(objective, bestSolution);
-
-                    pheromoneTrails.get(objective).update((candidate, value) -> {
-                        value = algorithm.applyEvaporationFactor(value);
-
-                        if (bestSolution.getVariables().contains(candidate)) {
-                            value += 1 / (1 + bestSolution.getObjective(objective)
-                                - bestSolutions.get(objective).getObjective(objective));
-                        }
-
-                        return value;
-                    });
-                });
-            }
-
-            @Override
-            protected double getPheromoneFactor(S solution, T candidate) {
-                switch (aggregation) {
-                    case RANDOM:
-                        return pheromoneTrails
-                            .get(JMetalRandom.getInstance().nextInt(0, pheromoneTrails.size() - 1))
-                            .get(candidate);
-                    case SUMMED:
-                        return pheromoneTrails.stream()
-                            .mapToDouble(pheromoneTrail -> pheromoneTrail.get(candidate))
-                            .sum();
-                    default:
-                        throw new IllegalStateException("Unexpected value: " + aggregation);
-                }
-            }
-
-            @Override
-            protected double getHeuristicFactor(S solution, T candidate) {
-                double factor = IntStream.range(0, solution.getNumberOfObjectives())
-                    .mapToDouble(solution::getObjective)
-                    .sum();
-
-                return factor / solution.getNumberOfVariables();
-            }
-        }
     }
 }
