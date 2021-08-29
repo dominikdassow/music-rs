@@ -3,8 +3,9 @@ package de.dominikdassow.musicrs.service;
 import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
-import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationRunner;
+import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationAlgorithm;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
+import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationRunner;
 import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.recommender.algorithm.NSGAII;
 import de.dominikdassow.musicrs.recommender.engine.SimilarPlaylistsEngine;
@@ -16,7 +17,6 @@ import org.jooq.lambda.tuple.Tuple;
 import org.jooq.lambda.tuple.Tuple3;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -112,12 +112,8 @@ public class RecommendationService {
                 = new MusicPlaylistContinuationProblem(similarTracksEngine, tracks, similarTracksLists);
 
             Map<AlgorithmConfiguration, MusicPlaylistContinuationRunner> runners = new HashMap<>() {{
-                algorithmConfigurations.forEach(configuration -> {
-                    if (configuration instanceof NSGAII.Configuration) {
-                        put(configuration, new MusicPlaylistContinuationRunner(
-                            new NSGAII(problem, (NSGAII.Configuration) configuration)));
-                    }
-                });
+                algorithmConfigurations.forEach(configuration -> put(configuration,
+                    new MusicPlaylistContinuationRunner(configuration.createAlgorithmFor(problem))));
             }};
 
             runners.forEach((configuration, runner) -> {

@@ -61,12 +61,15 @@ public class MusicPlaylistContinuationProblem
     public void evaluate(PermutationSolution<Integer> solution) {
         final FixedBaseList<String> solutionTracks = new FixedBaseList<>(tracks);
 
-        solution.getVariables()
+        solution.getVariables().stream()
+            .filter(Objects::nonNull)
             .forEach(index -> solutionTracks.add(candidateTracks.get(index)));
+
+        List<String> tracks = solutionTracks.values();
 
         for (int i = 0; i < objectives.size(); i++) {
             // TODO: Constant
-            solution.setObjective(i, objectives.get(i).evaluate(solutionTracks.values().subList(0, 500)));
+            solution.setObjective(i, objectives.get(i).evaluate(tracks.subList(0, Math.min(500, tracks.size()))));
         }
     }
 
