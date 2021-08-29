@@ -39,8 +39,6 @@ public abstract class MACO<S extends Solution<T>, T>
     ) {
         super(problem);
 
-        log.info("MACO()");
-
         this.numberOfAnts = numberOfAnts;
         this.numberOfCycles = numberOfCycles;
         this.alpha = alpha;
@@ -54,13 +52,11 @@ public abstract class MACO<S extends Solution<T>, T>
 
     @Override
     protected void initProgress() {
-        log.info("initProgress()");
         currentCycle = 0;
     }
 
     @Override
     protected void updateProgress() {
-        log.info("updateProgress(), currentCycle=" + currentCycle);
         currentCycle++;
     }
 
@@ -71,17 +67,13 @@ public abstract class MACO<S extends Solution<T>, T>
 
     @Override
     protected void initParameters() {
-        log.info("initParameters()");
         colonies = createColonies();
         colonies.forEach(Colony::initPheromoneTrails);
-        log.info("--- initParameters()");
     }
 
     @Override
     protected void createSolutions() {
-        log.info("createSolutions()");
-        colonies.forEach(Colony::createSolutions);
-        log.info("--- createSolutions()");
+        colonies.parallelStream().forEach(Colony::createSolutions);
     }
 
     @Override
@@ -89,10 +81,8 @@ public abstract class MACO<S extends Solution<T>, T>
 
     @Override
     protected void updatePheromoneTrails() {
-        log.info("updatePheromoneTrails()");
         colonies.forEach(Colony::updatePheromoneTrails);
         colonies.forEach(Colony::reset);
-        log.info("--- updatePheromoneTrails()");
     }
 
     public int getNumberOfAnts() {
@@ -117,10 +107,6 @@ public abstract class MACO<S extends Solution<T>, T>
 
     @Override
     public List<S> getResult() {
-        log.info("getResult(), colonies=" + colonies.size());
-
-        colonies.forEach(colony -> log.info("> bestSolutions=" + colony.getBestSolutions()));
-
         return SolutionListUtils.getNonDominatedSolutions(new ArrayList<>() {{
             colonies.forEach(colony -> addAll(colony.getBestSolutions()));
         }});

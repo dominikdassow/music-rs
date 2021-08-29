@@ -16,12 +16,10 @@ public class MACO1<S extends Solution<T>, T>
 
     public MACO1(Problem<S> problem, int numberOfAnts, int numberOfCycles, double alpha, double beta, double p) {
         super(problem, numberOfAnts, numberOfCycles, alpha, beta, p);
-        log.info("MACO1()");
     }
 
     @Override
     protected List<Colony<S, T>> createColonies() {
-        log.info("MACO1::createColonies()");
         return createColoniesWith(this, PheromoneFactorAggregation.RANDOM);
     }
 
@@ -32,8 +30,6 @@ public class MACO1<S extends Solution<T>, T>
         List<Colony<S, T>> colonies = new ArrayList<>();
         List<PheromoneTrail<S, T>> pheromoneTrails = new ArrayList<>();
 
-        log.info("MACO1::createColoniesWith() :: " + algorithm.getProblem().getNumberOfObjectives());
-
         IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(i -> {
             PheromoneTrail<S, T> pheromoneTrail = new PheromoneTrail<>(algorithm.getCandidates()) {{
                 pheromoneTrails.add(this);
@@ -43,8 +39,6 @@ public class MACO1<S extends Solution<T>, T>
         });
 
         colonies.add(new Colony.MultiObjective.MultiplePheromoneTrails<>(algorithm, pheromoneTrails, aggregation));
-
-        log.info("MACO1::createColoniesWith() :: colonies=" + colonies.size());
 
         return colonies;
     }
