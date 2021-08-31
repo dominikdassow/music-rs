@@ -9,6 +9,7 @@ import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.service.DatabaseService;
 import de.dominikdassow.musicrs.service.RecommendationService;
 import lombok.extern.slf4j.Slf4j;
+import org.uma.jmetal.solution.Solution;
 
 import java.util.*;
 import java.util.function.Function;
@@ -25,14 +26,14 @@ public class EvaluateSamplesTask
 
     private RecommendationService recommender;
 
-    private List<AlgorithmConfiguration> algorithmConfigurations;
+    private List<AlgorithmConfiguration<? extends Solution<Integer>>> algorithmConfigurations;
 
     public EvaluateSamplesTask() {
         super("Evaluate Sample Playlists");
     }
 
-    public EvaluateSamplesTask using(AlgorithmConfiguration... algorithmConfigurations) {
-        this.algorithmConfigurations = List.of(algorithmConfigurations);
+    public EvaluateSamplesTask using(List<AlgorithmConfiguration<? extends Solution<Integer>>> configurations) {
+        this.algorithmConfigurations = configurations;
 
         return this;
     }
@@ -89,7 +90,7 @@ public class EvaluateSamplesTask
 
         recommendations.forEach(recommendation -> {
             log.info("### RESULT [playlist=" + recommendation.getPlaylist() + "] " +
-                "[" + recommendation.getConfiguration().toString() + "]");
+                "[" + recommendation.getConfiguration().getName() + "]");
 
             List<Double> rPrecision = new ArrayList<>();
             List<Double> ndcg = new ArrayList<>();

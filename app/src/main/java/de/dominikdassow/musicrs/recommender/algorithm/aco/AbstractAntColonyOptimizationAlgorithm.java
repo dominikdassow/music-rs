@@ -1,18 +1,20 @@
 package de.dominikdassow.musicrs.recommender.algorithm.aco;
 
+import de.dominikdassow.musicrs.recommender.problem.GrowingProblem;
+import de.dominikdassow.musicrs.recommender.solution.GrowingSolution;
 import org.uma.jmetal.algorithm.Algorithm;
-import org.uma.jmetal.problem.Problem;
+import org.uma.jmetal.util.JMetalLogger;
 
-public abstract class AbstractAntColonyOptimizationAlgorithm<S, R>
+public abstract class AbstractAntColonyOptimizationAlgorithm<S extends GrowingSolution<T>, T, R>
     implements Algorithm<R> {
 
-    protected final Problem<S> problem;
+    protected final GrowingProblem<S, T> problem;
 
-    public AbstractAntColonyOptimizationAlgorithm(Problem<S> problem) {
+    public AbstractAntColonyOptimizationAlgorithm(GrowingProblem<S, T> problem) {
         this.problem = problem;
     }
 
-    public Problem<S> getProblem() {
+    public GrowingProblem<S, T> getProblem() {
         return problem;
     }
 
@@ -35,14 +37,21 @@ public abstract class AbstractAntColonyOptimizationAlgorithm<S, R>
 
     @Override
     public void run() {
-        initProgress();
-        initParameters();
+        try {
+            initProgress();
+            initParameters();
 
-        while (!isStoppingConditionReached()) {
-            createSolutions();
-            performDaemonActions();
-            updatePheromoneTrails();
-            updateProgress();
+            while (!isStoppingConditionReached()) {
+                createSolutions();
+                performDaemonActions();
+                updatePheromoneTrails();
+                updateProgress();
+            }
+        } catch (Exception e) {
+            JMetalLogger.logger.severe(e.getMessage());
+            e.printStackTrace();
+
+            throw e;
         }
     }
 }

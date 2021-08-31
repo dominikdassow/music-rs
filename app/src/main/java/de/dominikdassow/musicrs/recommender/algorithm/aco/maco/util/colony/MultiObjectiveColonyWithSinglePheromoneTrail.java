@@ -3,19 +3,22 @@ package de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.colony;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.MACO;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.Colony;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.PheromoneTrail;
-import org.uma.jmetal.solution.Solution;
+import de.dominikdassow.musicrs.recommender.solution.GrowingSolution;
 import org.uma.jmetal.util.SolutionListUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class MultiObjectiveColonyWithSinglePheromoneTrail<S extends Solution<T>, T>
+public class MultiObjectiveColonyWithSinglePheromoneTrail<S extends GrowingSolution<T>, T>
     extends Colony<S, T> {
 
-    private final PheromoneTrail<S, T> pheromoneTrail;
+    private final PheromoneTrail<T> pheromoneTrail;
+    private final Map<Integer, List<S>> localBestSolutions = new HashMap<>();
 
-    public MultiObjectiveColonyWithSinglePheromoneTrail(MACO<S, T> algorithm, PheromoneTrail<S, T> pheromoneTrail) {
+    public MultiObjectiveColonyWithSinglePheromoneTrail(MACO<S, T> algorithm, PheromoneTrail<T> pheromoneTrail) {
         super(algorithm);
 
         this.pheromoneTrail = pheromoneTrail;
@@ -27,16 +30,26 @@ public class MultiObjectiveColonyWithSinglePheromoneTrail<S extends Solution<T>,
     }
 
     @Override
-    public void updatePheromoneTrails() {
+    public void findBestSolutions() {
         IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
             List<S> nonDominatedSolutions
                 = SolutionListUtils.getNonDominatedSolutions(solutions);
 
-            nonDominatedSolutions
-                .forEach(solution -> updatePossibleBestSolution(objective, solution));
+            localBestSolutions.put(objective, nonDominatedSolutions);
 
-            List<T> candidatesToReward = nonDominatedSolutions
-                .stream().flatMap(nonDominatedSolution -> nonDominatedSolution.getVariables().stream())
+            nonDominatedSolutions
+                .forEach(solution -> updatePossibleGlobalBestSolution(objective, solution));
+        });
+    }
+
+    @Override
+    public void updatePheromoneTrails() {
+        IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
+            List<S> nonDominatedSolutions = localBestSolutions.get(objective);
+
+            List<T> candidatesToReward = nonDominatedSolutions.stream()
+                .flatMap(solution -> solution.getVariables().stream()
+                    .filter(candidate -> algorithm.getProblem().isCandidateRewardedInSolution(candidate, solution)))
                 .collect(Collectors.toList());
 
             pheromoneTrail.update((candidate, value) -> {
@@ -52,14 +65,21 @@ public class MultiObjectiveColonyWithSinglePheromoneTrail<S extends Solution<T>,
     }
 
     @Override
-    protected double getPheromoneFactor(T candidate) {
+    protected double getPheromoneFactor(S solution, T candidate) {
         return pheromoneTrail.get(candidate);
     }
 
     @Override
-    protected double getHeuristicFactor(S solution) {
+    protected double getHeuristicFactor(S solution, T candidate) {
         return IntStream.range(0, solution.getNumberOfObjectives())
-            .mapToDouble(solution::getObjective)
+            .mapToDouble(objective -> algorithm.getProblem().evaluateCandidate(candidate, objective))
             .sum();
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+
+        localBestSolutions.clear();
     }
 }

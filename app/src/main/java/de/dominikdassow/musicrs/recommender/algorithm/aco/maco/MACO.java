@@ -1,17 +1,16 @@
 package de.dominikdassow.musicrs.recommender.algorithm.aco.maco;
 
-import com.google.common.collect.ImmutableList;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.AbstractAntColonyOptimizationAlgorithm;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.Colony;
-import org.uma.jmetal.problem.Problem;
-import org.uma.jmetal.solution.Solution;
+import de.dominikdassow.musicrs.recommender.problem.GrowingProblem;
+import de.dominikdassow.musicrs.recommender.solution.GrowingSolution;
 import org.uma.jmetal.util.SolutionListUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class MACO<S extends Solution<T>, T>
-    extends AbstractAntColonyOptimizationAlgorithm<S, List<S>> {
+public abstract class MACO<S extends GrowingSolution<T>, T>
+    extends AbstractAntColonyOptimizationAlgorithm<S, T, List<S>> {
 
     public enum PheromoneFactorAggregation {RANDOM, SUMMED}
 
@@ -21,14 +20,12 @@ public abstract class MACO<S extends Solution<T>, T>
     private final double beta; // Heuristic factors weight
     private final double p; // Evaporation factor
 
-    private final List<T> candidates;
-
     private int currentCycle;
 
     protected List<Colony<S, T>> colonies;
 
     public MACO(
-        Problem<S> problem,
+        GrowingProblem<S, T> problem,
         int numberOfAnts,
         int numberOfCycles,
         double alpha,
@@ -42,8 +39,6 @@ public abstract class MACO<S extends Solution<T>, T>
         this.alpha = alpha;
         this.beta = beta;
         this.p = p;
-
-        candidates = ImmutableList.copyOf(problem.createSolution().getVariables());
     }
 
     abstract protected List<Colony<S, T>> createColonies();
@@ -75,7 +70,9 @@ public abstract class MACO<S extends Solution<T>, T>
     }
 
     @Override
-    protected void performDaemonActions() {}
+    protected void performDaemonActions() {
+        colonies.forEach(Colony::findBestSolutions);
+    }
 
     @Override
     protected void updatePheromoneTrails() {
@@ -97,10 +94,6 @@ public abstract class MACO<S extends Solution<T>, T>
 
     public double applyEvaporationFactor(double value) {
         return value * (1 - p);
-    }
-
-    public List<T> getCandidates() {
-        return candidates;
     }
 
     @Override

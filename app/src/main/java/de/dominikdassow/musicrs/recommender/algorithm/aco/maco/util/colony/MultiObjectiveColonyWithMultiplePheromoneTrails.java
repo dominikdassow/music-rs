@@ -3,23 +3,26 @@ package de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.colony;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.MACO;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.Colony;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.PheromoneTrail;
-import org.uma.jmetal.solution.Solution;
+import de.dominikdassow.musicrs.recommender.solution.GrowingSolution;
 import org.uma.jmetal.util.SolutionListUtils;
 import org.uma.jmetal.util.comparator.ObjectiveComparator;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
-public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends Solution<T>, T>
+public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends GrowingSolution<T>, T>
     extends Colony<S, T> {
 
-    private final List<PheromoneTrail<S, T>> pheromoneTrails;
+    private final List<PheromoneTrail<T>> pheromoneTrails;
     private final MACO.PheromoneFactorAggregation aggregation;
+    private final Map<Integer, S> localBestSolutions = new ConcurrentHashMap<>();
 
     public MultiObjectiveColonyWithMultiplePheromoneTrails(
         MACO<S, T> algorithm,
-        List<PheromoneTrail<S, T>> pheromoneTrails,
+        List<PheromoneTrail<T>> pheromoneTrails,
         MACO.PheromoneFactorAggregation aggregation
     ) {
         super(algorithm);
@@ -34,19 +37,33 @@ public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends Solution<
     }
 
     @Override
-    public void updatePheromoneTrails() {
+    public void findBestSolutions() {
         IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
-            S bestSolution
+            S localBestSolution
                 = SolutionListUtils.findBestSolution(solutions, new ObjectiveComparator<>(objective));
 
-            updatePossibleBestSolution(objective, bestSolution);
+            localBestSolutions.put(objective, localBestSolution);
+
+            updatePossibleGlobalBestSolution(objective, localBestSolution);
+        });
+    }
+
+    @Override
+    public void updatePheromoneTrails() {
+        IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
+            S localBestSolution = localBestSolutions.get(objective);
+
+            double localBestSolutionValue = algorithm.getProblem()
+                .applyObjectiveValueNormalization(objective, localBestSolution.getObjective(objective));
+
+            double globalBestSolutionValue = algorithm.getProblem()
+                .applyObjectiveValueNormalization(objective, globalBestSolutions.get(objective).getObjective(objective));
 
             pheromoneTrails.get(objective).update((candidate, value) -> {
                 value = algorithm.applyEvaporationFactor(value);
 
-                if (bestSolution.getVariables().contains(candidate)) {
-                    value += 1 / (1 + bestSolution.getObjective(objective)
-                        - bestSolutions.get(objective).getObjective(objective));
+                if (algorithm.getProblem().isCandidateRewardedInSolution(candidate, localBestSolution)) {
+                    value += 1 / (1 + localBestSolutionValue - globalBestSolutionValue);
                 }
 
                 return value;
@@ -55,7 +72,7 @@ public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends Solution<
     }
 
     @Override
-    protected double getPheromoneFactor(T candidate) {
+    protected double getPheromoneFactor(S solution, T candidate) {
         switch (aggregation) {
             case RANDOM:
                 return pheromoneTrails
@@ -71,9 +88,16 @@ public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends Solution<
     }
 
     @Override
-    protected double getHeuristicFactor(S solution) {
+    protected double getHeuristicFactor(S solution, T candidate) {
         return IntStream.range(0, solution.getNumberOfObjectives())
-            .mapToDouble(solution::getObjective)
+            .mapToDouble(objective -> algorithm.getProblem().evaluateCandidate(candidate, objective))
             .sum();
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+
+        localBestSolutions.clear();
     }
 }

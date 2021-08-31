@@ -3,11 +3,9 @@ package de.dominikdassow.musicrs.service;
 import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
-import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationAlgorithm;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationRunner;
 import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
-import de.dominikdassow.musicrs.recommender.algorithm.NSGAII;
 import de.dominikdassow.musicrs.recommender.engine.SimilarPlaylistsEngine;
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
 import lombok.Getter;
@@ -15,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.lambda.tuple.Tuple;
 import org.jooq.lambda.tuple.Tuple3;
+import org.uma.jmetal.solution.Solution;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -73,7 +72,10 @@ public class RecommendationService {
         similarTracksEngine = new SimilarTracksEngine();
     }
 
-    public List<Result> makeRecommendations(Set<Integer> playlists, List<AlgorithmConfiguration> algorithmConfigurations) {
+    public List<Result> makeRecommendations(
+        Set<Integer> playlists,
+        List<AlgorithmConfiguration<? extends Solution<Integer>>> algorithmConfigurations
+    ) {
         List<Result> recommendations = new ArrayList<>();
 
         playlists.forEach(playlist -> {
@@ -94,10 +96,10 @@ public class RecommendationService {
 
                 if (tracks.isEmpty()) {
                     similarTracksLists = similarPlaylistsEngine
-                        .getRandomSimilarTracksFor(playlist, 500); // TODO: Constant
+                        .getRandomSimilarTracksFor(playlist, 600); // TODO: Constant
                 } else {
                     similarTracksLists = similarPlaylistsEngine
-                        .getSimilarTracksFor(playlist, 500); // TODO: Constant
+                        .getSimilarTracksFor(playlist, 600); // TODO: Constant
                 }
             }
 
@@ -108,13 +110,14 @@ public class RecommendationService {
                 .distinct()
                 .count());
 
-            MusicPlaylistContinuationProblem problem
-                = new MusicPlaylistContinuationProblem(similarTracksEngine, tracks, similarTracksLists);
+            MusicPlaylistContinuationProblem.Configuration problemConfiguration
+                = new MusicPlaylistContinuationProblem.Configuration(similarTracksEngine, similarTracksLists, tracks);
 
-            Map<AlgorithmConfiguration, MusicPlaylistContinuationRunner> runners = new HashMap<>() {{
-                algorithmConfigurations.forEach(configuration -> put(configuration,
-                    new MusicPlaylistContinuationRunner(configuration.createAlgorithmFor(problem))));
-            }};
+            Map<AlgorithmConfiguration<? extends Solution<Integer>>, MusicPlaylistContinuationRunner> runners =
+                new HashMap<>() {{
+                    algorithmConfigurations.forEach(configuration -> put(configuration,
+                        new MusicPlaylistContinuationRunner(configuration, problemConfiguration)));
+                }};
 
             runners.forEach((configuration, runner) -> {
                 log.info("RUN: " + configuration.getName());
@@ -135,7 +138,7 @@ public class RecommendationService {
         private final Integer playlist;
 
         @Getter
-        private final AlgorithmConfiguration configuration;
+        private final AlgorithmConfiguration<? extends Solution<Integer>> configuration;
 
         @Getter
         private final List<List<String>> tracks;

@@ -1,9 +1,10 @@
 package de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util;
 
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.MACO;
+import de.dominikdassow.musicrs.recommender.solution.GrowingSolution;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
-import org.uma.jmetal.solution.Solution;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,13 +12,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public abstract class Colony<S extends Solution<T>, T> {
+@Slf4j
+public abstract class Colony<S extends GrowingSolution<T>, T> {
 
     protected final MACO<S, T> algorithm;
 
     protected final List<Ant<S, T>> ants = new ArrayList<>();
-    protected final List<S> solutions = new ArrayList<>();
-    protected final Map<Integer, S> bestSolutions = new HashMap<>();
+    protected final Map<Integer, S> globalBestSolutions = new ConcurrentHashMap<>();
+
+    protected List<S> solutions;
 
     public Colony(MACO<S, T> algorithm) {
         this.algorithm = algorithm;
@@ -27,7 +30,13 @@ public abstract class Colony<S extends Solution<T>, T> {
     }
 
     public void createSolutions() {
-        ants.parallelStream().forEach(ant -> solutions.add(ant.createSolution()));
+        solutions = ants.parallelStream()
+            .map(ant -> {
+                S solution = ant.createSolution();
+                algorithm.getProblem().evaluate(solution);
+                return solution;
+            })
+            .collect(Collectors.toList());
     }
 
     public void reset() {
@@ -35,47 +44,29 @@ public abstract class Colony<S extends Solution<T>, T> {
     }
 
     public Collection<S> getBestSolutions() {
-        return bestSolutions.values();
+        return globalBestSolutions.values();
     }
 
     public abstract void initPheromoneTrails();
 
+    public abstract void findBestSolutions();
+
     public abstract void updatePheromoneTrails();
 
-    protected abstract double getPheromoneFactor(T candidate);
+    protected abstract double getPheromoneFactor(S solution, T candidate);
 
-    protected abstract double getHeuristicFactor(S solution);
+    protected abstract double getHeuristicFactor(S solution, T candidate);
 
-    protected EnumeratedDistribution<T> createCandidateDistribution(List<T> partialSolution, List<T> candidates) {
-        Map<T, S> solutions = new ConcurrentHashMap<>() {{
-            candidates.parallelStream().forEach(candidate -> {
-                S solution = algorithm.getProblem().createSolution();
-
-                for (int i = 0; i < solution.getNumberOfVariables(); i++) {
-                    solution.setVariable(i, null);
-                }
-
-                for (int i = 0; i < partialSolution.size(); i++) {
-                    solution.setVariable(i, partialSolution.get(i));
-                }
-
-                solution.setVariable(partialSolution.size(), candidate);
-
-                algorithm.getProblem().evaluate(solution);
-
-                put(candidate, solution);
-            });
-        }};
-
-        Map<T, Double> pheromoneFactors = solutions.keySet().stream().collect(Collectors.toMap(
+    protected EnumeratedDistribution<T> createCandidateDistribution(S solution, List<T> candidates) {
+        Map<T, Double> pheromoneFactors = candidates.stream().collect(Collectors.toMap(
             Function.identity(),
-            candidate -> algorithm.applyPheromoneFactorsWeight(getPheromoneFactor(candidate)))
+            candidate -> algorithm.applyPheromoneFactorsWeight(getPheromoneFactor(solution, candidate)))
         );
 
-        Map<T, Double> heuristicFactors = solutions.entrySet().stream().collect(Collectors.toMap(
-            Map.Entry::getKey,
-            entry -> algorithm.applyHeuristicFactorsWeight(getHeuristicFactor(entry.getValue()))
-        ));
+        Map<T, Double> heuristicFactors = candidates.stream().collect(Collectors.toMap(
+            Function.identity(),
+            candidate -> algorithm.applyHeuristicFactorsWeight(getHeuristicFactor(solution, candidate)))
+        );
 
         double summedCandidatesFactor = candidates.stream()
             .mapToDouble(candidate -> pheromoneFactors.get(candidate) * heuristicFactors.get(candidate))
@@ -88,7 +79,7 @@ public abstract class Colony<S extends Solution<T>, T> {
                 double heuristicFactor = heuristicFactors.get(candidate);
                 double probability = (pheromoneFactor * heuristicFactor) / summedCandidatesFactor;
 
-                if (Double.isNaN(probability)) return Double.MIN_VALUE;
+                if (probability == 0.0 || Double.isNaN(probability)) return Double.MIN_VALUE;
 
                 return probability;
             }
@@ -101,10 +92,10 @@ public abstract class Colony<S extends Solution<T>, T> {
         return new EnumeratedDistribution<>(candidatesWithProbability);
     }
 
-    protected void updatePossibleBestSolution(int objective, S solution) {
-        boolean update = !bestSolutions.containsKey(objective) ||
-            solution.getObjective(objective) > bestSolutions.get(objective).getObjective(objective);
+    protected void updatePossibleGlobalBestSolution(int objective, S solution) {
+        boolean update = !globalBestSolutions.containsKey(objective) ||
+            algorithm.getProblem().isBetter(objective, solution, globalBestSolutions.get(objective));
 
-        if (update) bestSolutions.put(objective, solution);
+        if (update) globalBestSolutions.put(objective, solution);
     }
 }

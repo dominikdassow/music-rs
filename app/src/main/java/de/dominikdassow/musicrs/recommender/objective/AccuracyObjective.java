@@ -17,21 +17,33 @@ public class AccuracyObjective
     public double evaluate(List<String> tracks) {
         double fitness = 0.0;
 
-        final double numberOfPlaylists = similarTracksLists.size();
-        final double numberOfTracks = tracks.size();
+        double numberOfTracks = tracks.size();
 
         for (int i = 1; i <= tracks.size(); i++) {
-            final String trackId = tracks.get(i - 1);
-
-            for (int j = 1; j <= similarTracksLists.size(); j++) {
-                final SimilarTracksList trackList = similarTracksLists.get(j - 1);
-
-                if (trackList.contains(trackId)) {
-                    fitness += (numberOfTracks / i) * (numberOfPlaylists / j) * trackList.getSimilarity();
-                }
-            }
+            fitness += getTrackListsOccurrencesFactor(tracks.get(i - 1)) * (numberOfTracks / i);
         }
 
         return fitness;
+    }
+
+    @Override
+    public double evaluate(String track) {
+        return getTrackListsOccurrencesFactor(track);
+    }
+
+    private double getTrackListsOccurrencesFactor(String track) {
+        double factor = 0.0;
+
+        double numberOfTracksLists = similarTracksLists.size();
+
+        for (int j = 1; j <= similarTracksLists.size(); j++) {
+            SimilarTracksList tracksList = similarTracksLists.get(j - 1);
+
+            if (tracksList.contains(track)) {
+                factor += (numberOfTracksLists / j) * tracksList.getSimilarity();
+            }
+        }
+
+        return factor;
     }
 }

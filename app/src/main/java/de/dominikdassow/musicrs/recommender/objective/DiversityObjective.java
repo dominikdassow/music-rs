@@ -17,10 +17,17 @@ public class DiversityObjective
     public double evaluate(List<String> tracks) {
         double fitness = 0.0;
 
-        for (int i = 0; i < (tracks.size() - 1); i++) {
-            fitness += 1.0 - similarTracksEngine.getDistanceBetween(tracks.get(i), tracks.get(i + 1));
+        for (int i = 0; i < tracks.size(); i++) {
+            for (int j = i + 1; j < tracks.size(); j++) {
+                fitness += similarTracksEngine.getDistanceBetween(tracks.get(i), tracks.get(j));
+            }
         }
 
         return fitness;
+    }
+
+    @Override
+    public double evaluate(String track) {
+        return 0.0;
     }
 }

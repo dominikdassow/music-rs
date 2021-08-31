@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.uma.jmetal.algorithm.Algorithm;
-import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder;
 import org.uma.jmetal.algorithm.multiobjective.smsemoa.SMSEMOABuilder;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.operator.crossover.impl.PMXCrossover;
@@ -20,13 +19,13 @@ import org.uma.jmetal.util.comparator.RankingAndCrowdingDistanceComparator;
 import java.util.List;
 
 public class SMSEMOA
-    implements MusicPlaylistContinuationAlgorithm {
+    implements MusicPlaylistContinuationAlgorithm<PermutationSolution<Integer>> {
 
-    private final MusicPlaylistContinuationProblem problem;
+    private final MusicPlaylistContinuationProblem.Permutation problem;
 
     private final Algorithm<List<PermutationSolution<Integer>>> algorithm;
 
-    public SMSEMOA(MusicPlaylistContinuationProblem problem, Configuration configuration) {
+    public SMSEMOA(MusicPlaylistContinuationProblem.Permutation problem, Configuration configuration) {
         this.problem = problem;
 
         final CrossoverOperator<PermutationSolution<Integer>> crossover
@@ -51,7 +50,7 @@ public class SMSEMOA
     }
 
     @Override
-    public MusicPlaylistContinuationProblem getProblem() {
+    public MusicPlaylistContinuationProblem<PermutationSolution<Integer>> getProblem() {
         return problem;
     }
 
@@ -59,7 +58,7 @@ public class SMSEMOA
     @RequiredArgsConstructor
     public static
     class Configuration
-        implements AlgorithmConfiguration {
+        implements AlgorithmConfiguration<PermutationSolution<Integer>> {
 
         @Getter
         private final int populationSize;
@@ -82,8 +81,9 @@ public class SMSEMOA
         }
 
         @Override
-        public MusicPlaylistContinuationAlgorithm createAlgorithmFor(MusicPlaylistContinuationProblem problem) {
-            return new SMSEMOA(problem, this);
+        public MusicPlaylistContinuationAlgorithm<PermutationSolution<Integer>>
+        createAlgorithmFor(MusicPlaylistContinuationProblem.Configuration configuration) {
+            return new SMSEMOA(new MusicPlaylistContinuationProblem.Permutation(configuration), this);
         }
     }
 }

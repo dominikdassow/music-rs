@@ -6,24 +6,26 @@ import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
 import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
 import de.dominikdassow.musicrs.service.DatabaseService;
+import de.dominikdassow.musicrs.study.ExecuteAlgorithms;
 import de.dominikdassow.musicrs.study.GenerateTrackIdsForBestParetoSets;
 import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.lab.experiment.Experiment;
 import org.uma.jmetal.lab.experiment.ExperimentBuilder;
 import org.uma.jmetal.lab.experiment.component.impl.ComputeQualityIndicators;
-import org.uma.jmetal.lab.experiment.component.impl.ExecuteAlgorithms;
 import org.uma.jmetal.lab.experiment.component.impl.GenerateReferenceParetoFront;
 import org.uma.jmetal.lab.experiment.util.ExperimentAlgorithm;
 import org.uma.jmetal.lab.experiment.util.ExperimentProblem;
 import org.uma.jmetal.qualityindicator.impl.Epsilon;
 import org.uma.jmetal.qualityindicator.impl.hypervolume.impl.PISAHypervolume;
-import org.uma.jmetal.solution.permutationsolution.PermutationSolution;
+import org.uma.jmetal.solution.Solution;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -34,13 +36,14 @@ public class ConductStudyTask
     private static final String STUDY_NAME = "MusicPlaylistContinuationStudy";
     private static final String STUDY_DIRECTORY = "../data/study";
 
+    private static final int MAX_RETRIES = 10;
     private static final int INDEPENDENT_RUNS = 2; // TODO
 
     private SimilarTracksEngine similarTracksEngine;
 
     private Set<Integer> playlists;
 
-    private List<AlgorithmConfiguration> algorithmConfigurations;
+    private List<AlgorithmConfiguration<? extends Solution<Integer>>> algorithmConfigurations;
 
     public ConductStudyTask() {
         super("Conduct Study");
@@ -52,8 +55,8 @@ public class ConductStudyTask
         return this;
     }
 
-    public ConductStudyTask using(AlgorithmConfiguration... algorithmConfigurations) {
-        this.algorithmConfigurations = List.of(algorithmConfigurations);
+    public ConductStudyTask using(List<AlgorithmConfiguration<? extends Solution<Integer>>> configurations) {
+        this.algorithmConfigurations = configurations;
 
         return this;
     }
@@ -65,16 +68,54 @@ public class ConductStudyTask
 
     @Override
     protected void execute() throws IOException {
-        List<ExperimentProblem<PermutationSolution<Integer>>> problems
-            = getProblems();
+        log.info("NUMBER OF PROCESSORS: " + Runtime.getRuntime().availableProcessors());
+        log.info("NUMBER OF THREADS: " + ForkJoinPool.commonPool().getParallelism());
 
-        List<ExperimentAlgorithm<PermutationSolution<Integer>, List<PermutationSolution<Integer>>>> algorithms
-            = getAlgorithmsFor(problems);
+        Map<String, ExperimentProblem<Solution<Integer>>> problems
+            = new ConcurrentHashMap<>();
 
-        Experiment<PermutationSolution<Integer>, List<PermutationSolution<Integer>>> experiment =
-            new ExperimentBuilder<PermutationSolution<Integer>, List<PermutationSolution<Integer>>>(STUDY_NAME)
+        List<ExperimentAlgorithm<Solution<Integer>, List<Solution<Integer>>>> algorithms
+            = new ArrayList<>();
+
+        getPlaylists().parallel().forEach(playlist -> {
+            MusicPlaylistContinuationProblem.Configuration problemConfiguration
+                = getProblemConfiguration(playlist);
+
+            String problemTag = "MPC_" + playlist;
+
+            algorithmConfigurations.forEach(algorithmConfiguration -> {
+                @SuppressWarnings("unchecked")
+                MusicPlaylistContinuationAlgorithm<Solution<Integer>> algorithm
+                    = (MusicPlaylistContinuationAlgorithm<Solution<Integer>>)
+                    algorithmConfiguration.createAlgorithmFor(problemConfiguration);
+
+                problems.computeIfAbsent(problemTag, tag -> {
+                    ExperimentProblem<Solution<Integer>> problem
+                        = new ExperimentProblem<>(algorithm.getProblem(), tag);
+
+                    problem.setReferenceFront(tag + ".csv");
+
+                    return problem;
+                });
+
+                IntStream.range(0, INDEPENDENT_RUNS).forEach(run -> {
+                    ExperimentAlgorithm<Solution<Integer>, List<Solution<Integer>>> a
+                        = new ExperimentAlgorithm<>(
+                        algorithm.get(),
+                        algorithmConfiguration.getName(),
+                        problems.get(problemTag),
+                        run
+                    );
+
+                    algorithms.add(a);
+                });
+            });
+        });
+
+        Experiment<Solution<Integer>, List<Solution<Integer>>> experiment =
+            new ExperimentBuilder<Solution<Integer>, List<Solution<Integer>>>(STUDY_NAME)
                 .setAlgorithmList(algorithms)
-                .setProblemList(problems)
+                .setProblemList(new ArrayList<>(problems.values()))
                 .setExperimentBaseDirectory(STUDY_DIRECTORY)
                 .setOutputParetoFrontFileName("FUN")
                 .setOutputParetoSetFileName("VAR")
@@ -86,10 +127,9 @@ public class ConductStudyTask
                     new Epsilon<>()
                 ))
                 .setIndependentRuns(INDEPENDENT_RUNS)
-                .setNumberOfCores(2) // TODO
                 .build();
 
-        new ExecuteAlgorithms<>(experiment).run();
+        new ExecuteAlgorithms<>(experiment, MAX_RETRIES).run();
         new GenerateReferenceParetoFront(experiment).run();
         new ComputeQualityIndicators<>(experiment).run();
         new GenerateTrackIdsForBestParetoSets(experiment).run();
@@ -100,62 +140,37 @@ public class ConductStudyTask
 //            .createHTMLPageForEachIndicator();
     }
 
-    private List<ExperimentProblem<PermutationSolution<Integer>>> getProblems() {
-        final Stream<Integer> playlists = this.playlists == null
-            ? DatabaseService.readAllPlaylistChallenges()
-            : this.playlists.stream();
-
-        return new ArrayList<>() {{
-            playlists.parallel().forEach(playlist -> {
-                List<SimilarTracksList> similarTracksLists
-                    = DatabaseService.readSimilarTracksLists(playlist);
-
-                long numberOfUniqueTracks = similarTracksLists.stream()
-                    .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
-                    .distinct()
-                    .count();
-
-                // TODO: Constant
-                if (numberOfUniqueTracks < 500) {
-                    log.warn("# [" + playlist + "] SIMILAR PLAYLISTS :: Not enough unique tracks: "
-                        + numberOfUniqueTracks);
-
-                    return;
-                }
-
-                log.info("# [" + playlist + "] SIMILAR PLAYLISTS :: "
-                    + similarTracksLists.size() + " :: "
-                    + similarTracksLists.stream()
-                    .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
-                    .distinct()
-                    .count());
-
-                Map<Integer, String> tracks
-                    = DatabaseService.readPlaylistTracks(playlist);
-
-                MusicPlaylistContinuationProblem problem =
-                    new MusicPlaylistContinuationProblem(similarTracksEngine, tracks, similarTracksLists);
-
-                add(new ExperimentProblem<>(problem, "MPC_" + playlist)
-                    .setReferenceFront("MPC_" + playlist + ".csv"));
-            });
-        }};
+    private Stream<Integer> getPlaylists() {
+        return this.playlists == null ? DatabaseService.readAllPlaylistChallenges() : this.playlists.stream();
     }
 
-    private List<ExperimentAlgorithm<PermutationSolution<Integer>, List<PermutationSolution<Integer>>>>
-    getAlgorithmsFor(List<ExperimentProblem<PermutationSolution<Integer>>> problems) {
-        return new ArrayList<>() {{
-            problems.forEach(problem -> algorithmConfigurations.forEach(configuration -> {
-                final MusicPlaylistContinuationAlgorithm algorithm
-                    = configuration.createAlgorithmFor((MusicPlaylistContinuationProblem) problem.getProblem());
+    private MusicPlaylistContinuationProblem.Configuration getProblemConfiguration(Integer playlist) {
+        List<SimilarTracksList> similarTracksLists
+            = DatabaseService.readSimilarTracksLists(playlist);
 
-                IntStream.range(0, INDEPENDENT_RUNS).forEach(run -> add(new ExperimentAlgorithm<>(
-                    algorithm.get(),
-                    configuration.getName(),
-                    problem,
-                    run
-                )));
-            }));
-        }};
+        long numberOfUniqueTracks = similarTracksLists.stream()
+            .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
+            .distinct()
+            .count();
+
+        // TODO: Constant
+        if (numberOfUniqueTracks < 500) {
+            log.warn("# [" + playlist + "] SIMILAR PLAYLISTS :: " +
+                "Not enough unique tracks: " + numberOfUniqueTracks);
+
+            return null;
+        }
+
+//        log.info("# [" + playlist + "] SIMILAR PLAYLISTS :: "
+//            + similarTracksLists.size() + " :: "
+//            + similarTracksLists.stream()
+//            .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
+//            .distinct()
+//            .count());
+
+        Map<Integer, String> tracks
+            = DatabaseService.readPlaylistTracks(playlist);
+
+        return new MusicPlaylistContinuationProblem.Configuration(similarTracksEngine, similarTracksLists, tracks);
     }
 }

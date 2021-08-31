@@ -19,13 +19,13 @@ import org.uma.jmetal.util.comparator.RankingAndCrowdingDistanceComparator;
 import java.util.List;
 
 public class NSGAII
-    implements MusicPlaylistContinuationAlgorithm {
+    implements MusicPlaylistContinuationAlgorithm<PermutationSolution<Integer>> {
 
-    private final MusicPlaylistContinuationProblem problem;
+    private final MusicPlaylistContinuationProblem.Permutation problem;
 
     private final Algorithm<List<PermutationSolution<Integer>>> algorithm;
 
-    public NSGAII(MusicPlaylistContinuationProblem problem, Configuration configuration) {
+    public NSGAII(MusicPlaylistContinuationProblem.Permutation problem, Configuration configuration) {
         this.problem = problem;
 
         final CrossoverOperator<PermutationSolution<Integer>> crossover
@@ -49,7 +49,7 @@ public class NSGAII
     }
 
     @Override
-    public MusicPlaylistContinuationProblem getProblem() {
+    public MusicPlaylistContinuationProblem<PermutationSolution<Integer>> getProblem() {
         return problem;
     }
 
@@ -57,7 +57,7 @@ public class NSGAII
     @RequiredArgsConstructor
     public static
     class Configuration
-        implements AlgorithmConfiguration {
+        implements AlgorithmConfiguration<PermutationSolution<Integer>> {
 
         @Getter
         private final int populationSize;
@@ -80,8 +80,9 @@ public class NSGAII
         }
 
         @Override
-        public MusicPlaylistContinuationAlgorithm createAlgorithmFor(MusicPlaylistContinuationProblem problem) {
-            return new NSGAII(problem, this);
+        public MusicPlaylistContinuationAlgorithm<PermutationSolution<Integer>>
+        createAlgorithmFor(MusicPlaylistContinuationProblem.Configuration configuration) {
+            return new NSGAII(new MusicPlaylistContinuationProblem.Permutation(configuration), this);
         }
     }
 }

@@ -5,6 +5,7 @@ import org.uma.jmetal.lab.experiment.Experiment;
 import org.uma.jmetal.lab.experiment.component.ExperimentComponent;
 import org.uma.jmetal.lab.experiment.util.ExperimentAlgorithm;
 import org.uma.jmetal.qualityindicator.impl.GenericIndicator;
+import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.JMetalLogger;
 import org.uma.jmetal.util.fileoutput.impl.DefaultFileOutputContext;
 
@@ -30,10 +31,10 @@ public class GenerateTrackIdsForBestParetoSets
     @Override
     public void run() throws IOException {
         experiment.getProblemList().forEach(experimentProblem -> {
-            final MusicPlaylistContinuationProblem problem;
+            final MusicPlaylistContinuationProblem<?> problem;
 
             try {
-                problem = (MusicPlaylistContinuationProblem) experimentProblem.getProblem();
+                problem = (MusicPlaylistContinuationProblem<?>) experimentProblem.getProblem();
             } catch (ClassCastException e) {
                 JMetalLogger.logger.severe("Experiment problem " +
                     "with tag '" + experimentProblem.getTag() + "' " +
@@ -55,7 +56,7 @@ public class GenerateTrackIdsForBestParetoSets
         });
     }
 
-    private void write(MusicPlaylistContinuationProblem problem, GenericIndicator<?> indicator, String directory) {
+    private void write(MusicPlaylistContinuationProblem<?> problem, GenericIndicator<?> indicator, String directory) {
         final String bestParetoSetsFileName = directory
             + "/BEST_" + indicator.getName() + "_" + experiment.getOutputParetoSetFileName() + ".csv";
 

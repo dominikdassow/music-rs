@@ -1,10 +1,10 @@
 package de.dominikdassow.musicrs.recommender.algorithm.aco.maco;
 
+import de.dominikdassow.musicrs.recommender.problem.GrowingProblem;
+import de.dominikdassow.musicrs.recommender.solution.GrowingSolution;
 import org.uma.jmetal.algorithm.AlgorithmBuilder;
-import org.uma.jmetal.problem.Problem;
-import org.uma.jmetal.solution.Solution;
 
-public class MACOBuilder<S extends Solution<T>, T>
+public class MACOBuilder<S extends GrowingSolution<T>, T>
     implements AlgorithmBuilder<MACO<S, T>> {
 
     private static final int DEFAULT_NUMBER_OF_ANTS = 100;
@@ -13,7 +13,7 @@ public class MACOBuilder<S extends Solution<T>, T>
     private static final double DEFAULT_HEURISTIC_FACTORS_WEIGHT = 0.5;
     private static final double DEFAULT_EVAPORATION_FACTOR = 0.1;
 
-    private final Problem<S> problem;
+    private final GrowingProblem<S, T> problem;
     private final int variant;
 
     private int numberOfAnts;
@@ -22,7 +22,7 @@ public class MACOBuilder<S extends Solution<T>, T>
     private double heuristicFactorsWeight; // beta
     private double evaporationFactor; // p
 
-    public MACOBuilder(Problem<S> problem, int variant) {
+    public MACOBuilder(GrowingProblem<S, T> problem, int variant) {
         this.problem = problem;
         this.variant = variant;
 

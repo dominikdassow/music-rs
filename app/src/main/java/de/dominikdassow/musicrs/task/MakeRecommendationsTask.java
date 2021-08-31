@@ -3,6 +3,7 @@ package de.dominikdassow.musicrs.task;
 import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.service.RecommendationService;
 import lombok.extern.slf4j.Slf4j;
+import org.uma.jmetal.solution.Solution;
 
 import java.util.List;
 import java.util.Set;
@@ -16,7 +17,7 @@ public class MakeRecommendationsTask
 
     private Set<Integer> playlists;
 
-    private List<AlgorithmConfiguration> algorithmConfigurations;
+    private List<AlgorithmConfiguration<? extends Solution<Integer>>> algorithmConfigurations;
 
     public MakeRecommendationsTask() {
         super("Make Recommendation");
@@ -28,8 +29,8 @@ public class MakeRecommendationsTask
         return this;
     }
 
-    public MakeRecommendationsTask using(AlgorithmConfiguration... algorithmConfigurations) {
-        this.algorithmConfigurations = List.of(algorithmConfigurations);
+    public MakeRecommendationsTask using(List<AlgorithmConfiguration<? extends Solution<Integer>>> configurations) {
+        this.algorithmConfigurations = configurations;
 
         return this;
     }
@@ -46,7 +47,7 @@ public class MakeRecommendationsTask
 
         recommendations.forEach(recommendation -> {
             log.info("### RESULT [playlist=" + recommendation.getPlaylist() + "] " +
-                "[" + recommendation.getConfiguration() + "]");
+                "[" + recommendation.getConfiguration().getName() + "]");
 
             // TODO: Use recommendations somehow
             recommendation.getTracks().forEach(tracks -> System.out.println(

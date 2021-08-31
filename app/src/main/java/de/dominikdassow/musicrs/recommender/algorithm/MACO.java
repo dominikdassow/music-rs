@@ -3,22 +3,22 @@ package de.dominikdassow.musicrs.recommender.algorithm;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationAlgorithm;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.MACOBuilder;
+import de.dominikdassow.musicrs.recommender.solution.GrowingSolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.uma.jmetal.algorithm.Algorithm;
-import org.uma.jmetal.solution.permutationsolution.PermutationSolution;
 
 import java.util.List;
 
 public class MACO
-    implements MusicPlaylistContinuationAlgorithm {
+    implements MusicPlaylistContinuationAlgorithm<GrowingSolution<Integer>> {
 
-    private final MusicPlaylistContinuationProblem problem;
+    private final MusicPlaylistContinuationProblem.Growing problem;
 
-    private final Algorithm<List<PermutationSolution<Integer>>> algorithm;
+    private final Algorithm<List<GrowingSolution<Integer>>> algorithm;
 
-    public MACO(MusicPlaylistContinuationProblem problem, Configuration configuration) {
+    public MACO(MusicPlaylistContinuationProblem.Growing problem, Configuration configuration) {
         this.problem = problem;
 
         algorithm = new MACOBuilder<>(problem, configuration.getVariant().id)
@@ -31,12 +31,12 @@ public class MACO
     }
 
     @Override
-    public Algorithm<List<PermutationSolution<Integer>>> get() {
+    public Algorithm<List<GrowingSolution<Integer>>> get() {
         return algorithm;
     }
 
     @Override
-    public MusicPlaylistContinuationProblem getProblem() {
+    public MusicPlaylistContinuationProblem<GrowingSolution<Integer>> getProblem() {
         return problem;
     }
 
@@ -44,7 +44,7 @@ public class MACO
     @RequiredArgsConstructor
     public static
     class Configuration
-        implements AlgorithmConfiguration {
+        implements AlgorithmConfiguration<GrowingSolution<Integer>> {
 
         public enum Variant {
             MULTIPLE_COLONIES_MULTIPLE_RANDOM_PHEROMONE_TRAILS(1),
@@ -87,8 +87,9 @@ public class MACO
         }
 
         @Override
-        public MusicPlaylistContinuationAlgorithm createAlgorithmFor(MusicPlaylistContinuationProblem problem) {
-            return new MACO(problem, this);
+        public MusicPlaylistContinuationAlgorithm<GrowingSolution<Integer>>
+        createAlgorithmFor(MusicPlaylistContinuationProblem.Configuration configuration) {
+            return new MACO(new MusicPlaylistContinuationProblem.Growing(configuration), this);
         }
     }
 }

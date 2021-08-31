@@ -60,16 +60,16 @@ public class SimilarTracksEngine {
         distanceModel = new CosineFeatureItemDistanceModel<>(data);
     }
 
-    public Double getDistanceBetween(String trackId1, String trackId2) {
-        final String key = trackId1 + "#" + trackId2;
+    public Double getDistanceBetween(String track1, String track2) {
+        final String key = track1 + "#" + track2;
 
         if (distances.containsKey(key)) return distances.get(key);
 
-        final double distance = distanceModel.dist(trackId1, trackId2);
+        final double distance = distanceModel.dist(track1, track2);
 
         // Cache track ids in both "directions" since the distance is symmetric
-        distances.put(trackId1 + "#" + trackId2, distance);
-        distances.put(trackId2 + "#" + trackId1, distance);
+        distances.put(track1 + "#" + track2, distance);
+        distances.put(track2 + "#" + track1, distance);
 
         return distance;
     }

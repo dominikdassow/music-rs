@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.uma.jmetal.algorithm.Algorithm;
 import org.uma.jmetal.solution.permutationsolution.PermutationSolution;
+import org.uma.jmetal.util.SolutionListUtils;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 import org.uma.jmetal.util.evaluator.impl.SequentialSolutionListEvaluator;
 
@@ -15,13 +16,13 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 public class NOOP
-    implements MusicPlaylistContinuationAlgorithm {
+    implements MusicPlaylistContinuationAlgorithm<PermutationSolution<Integer>> {
 
-    private final MusicPlaylistContinuationProblem problem;
+    private final MusicPlaylistContinuationProblem.Permutation problem;
 
     private final Algorithm<List<PermutationSolution<Integer>>> algorithm;
 
-    public NOOP(MusicPlaylistContinuationProblem problem, Configuration configuration) {
+    public NOOP(MusicPlaylistContinuationProblem.Permutation problem, Configuration configuration) {
         this.problem = problem;
 
         algorithm = new Algorithm<>() {
@@ -42,7 +43,7 @@ public class NOOP
 
             @Override
             public List<PermutationSolution<Integer>> getResult() {
-                return population;
+                return SolutionListUtils.getNonDominatedSolutions(population);
             }
 
             @Override
@@ -63,7 +64,7 @@ public class NOOP
     }
 
     @Override
-    public MusicPlaylistContinuationProblem getProblem() {
+    public MusicPlaylistContinuationProblem<PermutationSolution<Integer>> getProblem() {
         return problem;
     }
 
@@ -71,7 +72,7 @@ public class NOOP
     @RequiredArgsConstructor
     public static
     class Configuration
-        implements AlgorithmConfiguration {
+        implements AlgorithmConfiguration<PermutationSolution<Integer>> {
 
         @Getter
         private final int populationSize;
@@ -82,8 +83,9 @@ public class NOOP
         }
 
         @Override
-        public MusicPlaylistContinuationAlgorithm createAlgorithmFor(MusicPlaylistContinuationProblem problem) {
-            return new NOOP(problem, this);
+        public MusicPlaylistContinuationAlgorithm<PermutationSolution<Integer>>
+        createAlgorithmFor(MusicPlaylistContinuationProblem.Configuration configuration) {
+            return new NOOP(new MusicPlaylistContinuationProblem.Permutation(configuration), this);
         }
     }
 }

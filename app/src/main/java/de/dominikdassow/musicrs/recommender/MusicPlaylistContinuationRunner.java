@@ -1,7 +1,9 @@
 package de.dominikdassow.musicrs.recommender;
 
+import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.algorithm.Algorithm;
+import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.permutationsolution.PermutationSolution;
 import org.uma.jmetal.util.AbstractAlgorithmRunner;
 import org.uma.jmetal.util.JMetalException;
@@ -13,18 +15,27 @@ import java.util.stream.Collectors;
 public class MusicPlaylistContinuationRunner
     extends AbstractAlgorithmRunner {
 
-    protected final MusicPlaylistContinuationAlgorithm algorithm;
+    protected final MusicPlaylistContinuationAlgorithm<Solution<Integer>> algorithm;
 
-    public MusicPlaylistContinuationRunner(MusicPlaylistContinuationAlgorithm algorithm) {
+    public MusicPlaylistContinuationRunner(MusicPlaylistContinuationAlgorithm<Solution<Integer>> algorithm) {
         this.algorithm = algorithm;
     }
 
+    @SuppressWarnings("unchecked")
+    public MusicPlaylistContinuationRunner(
+        AlgorithmConfiguration<? extends Solution<Integer>> algorithmConfiguration,
+        MusicPlaylistContinuationProblem.Configuration problemConfiguration
+    ) {
+        this((MusicPlaylistContinuationAlgorithm<Solution<Integer>>)
+            algorithmConfiguration.createAlgorithmFor(problemConfiguration));
+    }
+
     public List<List<String>> run() {
-        Algorithm<List<PermutationSolution<Integer>>> algorithm = this.algorithm.get();
+        Algorithm<List<Solution<Integer>>> algorithm = this.algorithm.get();
 
         long computingTime = execute(algorithm);
 
-        List<PermutationSolution<Integer>> population = algorithm.getResult();
+        List<Solution<Integer>> population = algorithm.getResult();
 
         log.info("ALGORITHM: " + algorithm.getName());
         log.info("> TIME: " + computingTime);
