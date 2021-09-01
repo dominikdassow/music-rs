@@ -22,6 +22,9 @@ public abstract class Colony<S extends GrowingSolution<T>, T> {
     protected final List<Ant<S, T>> ants;
     protected final Map<Integer, List<S>> globalBestSolutions;
 
+    protected Map<T, Double> pheromoneFactors;
+    protected Map<T, Double> heuristicFactors;
+
     protected List<S> solutions;
 
     public Colony(MACO<S, T> algorithm) {
@@ -38,12 +41,27 @@ public abstract class Colony<S extends GrowingSolution<T>, T> {
         }};
     }
 
+    public void initPheromoneFactors() {
+        pheromoneFactors = algorithm.getProblem().getCandidates().stream().collect(Collectors.toMap(
+            Function.identity(),
+            candidate -> algorithm.applyPheromoneFactorsWeight(getPheromoneFactor(candidate)))
+        );
+    }
+
+    public void initHeuristicFactors() {
+        heuristicFactors = algorithm.getProblem().getCandidates().stream().collect(Collectors.toMap(
+            Function.identity(),
+            candidate -> algorithm.applyHeuristicFactorsWeight(getHeuristicFactor(candidate)))
+        );
+    }
+
     public void createSolutions() {
         solutions = ants.parallelStream()
             .map(Ant::createSolution)
             .peek(solution -> algorithm.getProblem().evaluate(solution))
             .collect(Collectors.toList());
 
+        // TODO
         if (solutions.size() != ants.size()) {
             log.info("#solution=" + solutions.size() + " :: #ants=" + ants.size());
         }
@@ -63,21 +81,11 @@ public abstract class Colony<S extends GrowingSolution<T>, T> {
 
     public abstract void updatePheromoneTrails();
 
-    protected abstract double getPheromoneFactor(S solution, T candidate);
+    protected abstract double getPheromoneFactor(T candidate);
 
-    protected abstract double getHeuristicFactor(S solution, T candidate);
+    protected abstract double getHeuristicFactor(T candidate);
 
-    protected EnumeratedDistribution<T> createCandidateDistribution(S solution, List<T> candidates) {
-        Map<T, Double> pheromoneFactors = candidates.stream().collect(Collectors.toMap(
-            Function.identity(),
-            candidate -> algorithm.applyPheromoneFactorsWeight(getPheromoneFactor(solution, candidate)))
-        );
-
-        Map<T, Double> heuristicFactors = candidates.stream().collect(Collectors.toMap(
-            Function.identity(),
-            candidate -> algorithm.applyHeuristicFactorsWeight(getHeuristicFactor(solution, candidate)))
-        );
-
+    protected EnumeratedDistribution<T> createCandidateDistribution(List<T> candidates) {
         double summedCandidatesFactor = candidates.stream()
             .mapToDouble(candidate -> pheromoneFactors.get(candidate) * heuristicFactors.get(candidate))
             .sum();

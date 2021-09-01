@@ -4,6 +4,7 @@ import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.MACO;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.Colony;
 import de.dominikdassow.musicrs.recommender.algorithm.aco.maco.util.PheromoneTrail;
 import de.dominikdassow.musicrs.recommender.solution.GrowingSolution;
+import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.util.SolutionListUtils;
 import org.uma.jmetal.util.comparator.ObjectiveComparator;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
+@Slf4j
 public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends GrowingSolution<T>, T>
     extends Colony<S, T> {
 
@@ -45,10 +47,17 @@ public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends GrowingSo
     @Override
     public void updatePheromoneTrails() {
         IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
+            S localBestSolution = localBestSolutions.get(objective);
+
             S globalBestSolution = SolutionListUtils
                 .findBestSolution(globalBestSolutions.get(objective), new ObjectiveComparator<>(objective));
 
-            S localBestSolution = localBestSolutions.get(objective);
+            // TODO
+            if (localBestSolution == null || globalBestSolution == null) {
+                log.warn("objective=" + objective
+                    + ", globalBestSolution=" + globalBestSolution
+                    + ", localBestSolution=" + localBestSolution);
+            }
 
             double localBestSolutionValue = algorithm.getProblem()
                 .applyObjectiveValueNormalization(objective, localBestSolution.getObjective(objective));
@@ -69,7 +78,7 @@ public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends GrowingSo
     }
 
     @Override
-    protected double getPheromoneFactor(S solution, T candidate) {
+    protected double getPheromoneFactor(T candidate) {
         switch (aggregation) {
             case RANDOM:
                 return pheromoneTrails
@@ -85,7 +94,7 @@ public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends GrowingSo
     }
 
     @Override
-    protected double getHeuristicFactor(S solution, T candidate) {
+    protected double getHeuristicFactor(T candidate) {
         return IntStream.range(0, algorithm.getProblem().getNumberOfObjectives())
             .mapToDouble(objective -> algorithm.getProblem().evaluate(candidate, objective))
             .sum();

@@ -58,12 +58,12 @@ public class MultiObjectiveColonyWithSinglePheromoneTrail<S extends GrowingSolut
     }
 
     @Override
-    protected double getPheromoneFactor(S solution, T candidate) {
+    protected double getPheromoneFactor(T candidate) {
         return pheromoneTrail.get(candidate);
     }
 
     @Override
-    protected double getHeuristicFactor(S solution, T candidate) {
+    protected double getHeuristicFactor(T candidate) {
         return IntStream.range(0, algorithm.getProblem().getNumberOfObjectives())
             .mapToDouble(objective -> algorithm.getProblem().evaluate(candidate, objective))
             .sum();

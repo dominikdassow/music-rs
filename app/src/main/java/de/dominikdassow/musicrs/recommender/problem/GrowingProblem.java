@@ -12,6 +12,7 @@ public interface GrowingProblem<S extends GrowingSolution<T>, T>
 
     double evaluate(T candidate, int objective);
 
+    // TODO: Move/Rename
     double applyObjectiveValueNormalization(int objective, double value);
 
     boolean isCandidateRewardedInSolution(T candidate, S solution);

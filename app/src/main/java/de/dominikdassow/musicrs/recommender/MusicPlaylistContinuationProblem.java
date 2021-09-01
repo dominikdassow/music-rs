@@ -91,11 +91,13 @@ public abstract class MusicPlaylistContinuationProblem<S extends Solution<Intege
         }
     }
 
+    @Slf4j
     public static class Growing
         extends MusicPlaylistContinuationProblem<GrowingSolution<Integer>>
         implements GrowingProblem<GrowingSolution<Integer>, Integer> {
 
         private final Map<Integer, Map<Integer, Double>> candidatesValues;
+        private final List<Integer> candidates;
 
         public Growing(Configuration configuration) {
             super(configuration);
@@ -104,11 +106,13 @@ public abstract class MusicPlaylistContinuationProblem<S extends Solution<Intege
 
             IntStream.range(0, candidateTracks.size()).forEach(
                 candidate -> candidatesValues.put(candidate, new ConcurrentHashMap<>(getNumberOfObjectives())));
+
+            candidates = List.copyOf(candidatesValues.keySet());
         }
 
         @Override
         public List<Integer> getCandidates() {
-            return List.copyOf(candidatesValues.keySet());
+            return candidates;
         }
 
         @Override

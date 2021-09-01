@@ -37,6 +37,8 @@ public class SingleObjectiveColony<S extends GrowingSolution<T>, T>
 
     @Override
     public void updatePheromoneTrails() {
+        S localBestSolution = this.localBestSolution;
+
         S globalBestSolution = SolutionListUtils
             .findBestSolution(globalBestSolutions.get(objective), solutionComparator);
 
@@ -49,18 +51,6 @@ public class SingleObjectiveColony<S extends GrowingSolution<T>, T>
         pheromoneTrail.update((candidate, value) -> {
             value = algorithm.applyEvaporationFactor(value);
 
-            // TODO
-            if (candidate == null || localBestSolution == null) {
-                log.warn("objective=" + objective
-                    + ", candidate=" + candidate
-                    + ", localBestSolution=" + localBestSolution
-                    + ", value=" + value
-                    + ", localBestSolutionValue=" + localBestSolutionValue
-                    + ", globalBestSolutionValue=" + globalBestSolutionValue);
-
-                return value;
-            }
-
             if (algorithm.getProblem().isCandidateRewardedInSolution(candidate, localBestSolution)) {
                 value += 1 / (1 + localBestSolutionValue - globalBestSolutionValue);
             }
@@ -70,12 +60,12 @@ public class SingleObjectiveColony<S extends GrowingSolution<T>, T>
     }
 
     @Override
-    protected double getPheromoneFactor(S solution, T candidate) {
+    protected double getPheromoneFactor(T candidate) {
         return pheromoneTrail.get(candidate);
     }
 
     @Override
-    protected double getHeuristicFactor(S solution, T candidate) {
+    protected double getHeuristicFactor(T candidate) {
         return algorithm.getProblem().evaluate(candidate, objective);
     }
 

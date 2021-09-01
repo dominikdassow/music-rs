@@ -76,9 +76,11 @@ public abstract class MACO<S extends GrowingSolution<T>, T>
             int currentCycle = 0;
 
             colonies = createColonies();
+            colonies.forEach(Colony::initHeuristicFactors);
 
             while (currentCycle < numberOfCycles) {
-                colonies.parallelStream().forEach(colony -> {
+                colonies.forEach(colony -> {
+                    colony.initPheromoneFactors();
                     colony.createSolutions();
                     colony.findBestSolutions();
                     colony.updatePheromoneTrails();

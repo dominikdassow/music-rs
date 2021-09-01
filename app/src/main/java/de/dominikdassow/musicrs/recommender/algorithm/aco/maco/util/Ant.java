@@ -23,8 +23,7 @@ public class Ant<S extends GrowingSolution<T>, T> {
         List<T> candidates = new LinkedList<>(algorithm.getProblem().getCandidates());
 
         for (int i = 0; i < solution.getNumberOfVariables(); i++) {
-            EnumeratedDistribution<T> distribution
-                = colony.createCandidateDistribution(solution, candidates);
+            EnumeratedDistribution<T> distribution = colony.createCandidateDistribution(candidates);
 
             T candidate = distribution.sample();
 
