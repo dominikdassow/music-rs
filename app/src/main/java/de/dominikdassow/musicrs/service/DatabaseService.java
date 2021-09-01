@@ -27,12 +27,12 @@ public class DatabaseService {
     public static final String DELIMITER = ",";
 
     public enum Store {
-        PLAYLIST("../data/store/{version}/playlist.csv"),
-        PLAYLIST_FEATURE("../data/store/{version}/playlist-feature.csv"),
-        TRACK("../data/store/{version}/track.csv"),
-        TRACK_FEATURE("../data/store/{version}/track-feature.csv"),
-        SIMILAR_TRACKS_LIST("../data/store/{version}/similar-tracks-list.csv"),
-        TRACK_AUDIO_FEATURE("../data/store/tracks-audio-feature.csv");
+        PLAYLIST("{data}/store/{version}/playlist.csv"),
+        PLAYLIST_FEATURE("{data}/store/{version}/playlist-feature.csv"),
+        TRACK("{data}/store/{version}/track.csv"),
+        TRACK_FEATURE("{data}/store/{version}/track-feature.csv"),
+        SIMILAR_TRACKS_LIST("{data}/store/{version}/similar-tracks-list.csv"),
+        TRACK_AUDIO_FEATURE("{data}/store/tracks-audio-feature.csv");
 
         private final String file;
 
@@ -41,7 +41,11 @@ public class DatabaseService {
         }
 
         public String getFile() {
-            return file.replace("{version}", AppConfiguration.get().storeVersion);
+            String file = this.file;
+
+            return file
+                .replace("{data}", AppConfiguration.get().dataDirectory)
+                .replace("{version}", AppConfiguration.get().storeVersion);
         }
     }
 

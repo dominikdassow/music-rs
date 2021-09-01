@@ -9,9 +9,11 @@ import java.io.IOException;
 
 public final class AppConfiguration {
 
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     private static AppConfiguration instance;
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    public JsonNode json;
 
     public int numberOfTracks;
     public int minNumberOfCandidateTracks;
@@ -22,6 +24,8 @@ public final class AppConfiguration {
     public int importSlicesOffset;
     public int importSlicesPerBatch;
     public int studyMaxRetries;
+    public String studyName;
+    public String dataDirectory;
     public String storeVersion;
 
     private AppConfiguration() {}
@@ -33,7 +37,7 @@ public final class AppConfiguration {
     }
 
     public void load(String file) throws IOException {
-        JsonNode json = objectMapper.readTree(new File(file));
+        json = objectMapper.readTree(new File(file));
 
         numberOfTracks = json.get("numberOfTracks").asInt();
         minNumberOfCandidateTracks = json.get("minNumberOfCandidateTracks").asInt();
@@ -44,12 +48,14 @@ public final class AppConfiguration {
         importSlicesPerBatch = json.get("importSlicesPerBatch").asInt();
         studyIndependentRuns = json.get("studyIndependentRuns").asInt();
         studyMaxRetries = json.get("studyMaxRetries").asInt();
+        studyName = json.get("studyName").asText();
+        dataDirectory = json.get("dataDirectory").asText();
         storeVersion = json.get("storeVersion").asText();
     }
 
     @SneakyThrows
     @Override
     public String toString() {
-        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(this);
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(this.json);
     }
 }

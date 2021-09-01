@@ -62,7 +62,8 @@ public class ImportDataTask
             log.info("> SLICE: " + slice);
 
             JsonNode root = objectMapper
-                .readTree(new File("../data/mpd/mpd.slice." + slice + ".json"));
+                .readTree(new File(AppConfiguration.get().dataDirectory
+                    + "/mpd/mpd.slice." + slice + ".json"));
 
             process(objectMapper.treeToValue(root.get("playlists"), PlaylistJson[].class))
                 .forEach(playlist -> {
@@ -87,7 +88,8 @@ public class ImportDataTask
         final Map<String, Track> challengePlaylistsTracks = new HashMap<>();
 
         JsonNode root = objectMapper
-            .readTree(new File("../data/challenge/challenge_set.json"));
+            .readTree(new File(AppConfiguration.get().dataDirectory
+                + "/challenge/challenge_set.json"));
 
         process(objectMapper.treeToValue(root.get("playlists"), PlaylistJson[].class))
             .forEach(playlist -> {

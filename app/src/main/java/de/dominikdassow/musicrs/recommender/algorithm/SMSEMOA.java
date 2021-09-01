@@ -72,6 +72,18 @@ public class SMSEMOA
         @Getter
         private final double mutationProbability;
 
+        public static AlgorithmConfiguration<PermutationSolution<Integer>> fromName(String name) {
+            String[] properties = name.split("__");
+
+            return builder()
+                .populationSize(Integer.parseInt(properties[1]))
+                .maxEvaluations(Integer.parseInt(properties[2]))
+                .crossoverProbability(Double.parseDouble(properties[3].replace('_', '.')))
+                .mutationProbability(Double.parseDouble(properties[4].replace('_', '.')))
+                .build();
+        }
+
+        @Override
         public String getName() {
             return "SMSEMOA"
                 + "__" + populationSize

@@ -77,6 +77,15 @@ public class NOOP
         @Getter
         private final int populationSize;
 
+        public static AlgorithmConfiguration<PermutationSolution<Integer>> fromName(String name) {
+            String[] properties = name.split("__");
+
+            return builder()
+                .populationSize(Integer.parseInt(properties[1]))
+                .build();
+        }
+
+        @Override
         public String getName() {
             return "NOOP"
                 + "__" + populationSize;

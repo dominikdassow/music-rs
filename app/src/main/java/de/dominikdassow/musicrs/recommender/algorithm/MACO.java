@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.uma.jmetal.algorithm.Algorithm;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class MACO
@@ -57,6 +58,13 @@ public class MACO
             Variant(int id) {
                 this.id = id;
             }
+
+            public static Variant fromId(int id) {
+                return Arrays.stream(Variant.values())
+                    .filter(variant -> variant.id == id)
+                    .findFirst()
+                    .orElseThrow();
+            }
         }
 
         @Getter
@@ -77,6 +85,21 @@ public class MACO
         @Getter
         private final double evaporationFactor;
 
+        public static AlgorithmConfiguration<GrowingSolution<Integer>> fromName(String name) {
+            String[] properties = name.split("__");
+            String variantId = String.valueOf(properties[0].charAt(properties[0].length() - 1));
+
+            return builder()
+                .variant(Variant.fromId(Integer.parseInt(variantId)))
+                .numberOfAnts(Integer.parseInt(properties[1]))
+                .numberOfCycles(Integer.parseInt(properties[2]))
+                .pheromoneFactorsWeight(Double.parseDouble(properties[3].replace('_', '.')))
+                .heuristicFactorsWeight(Double.parseDouble(properties[4].replace('_', '.')))
+                .evaporationFactor(Double.parseDouble(properties[5].replace('_', '.')))
+                .build();
+        }
+
+        @Override
         public String getName() {
             return "MACO" + variant.id
                 + "__" + numberOfAnts
