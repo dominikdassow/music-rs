@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.recommender.engine;
 
+import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.recommender.engine.playlist.SimilarPlaylistNeighborhood;
 import de.dominikdassow.musicrs.service.DatabaseService;
@@ -79,7 +80,7 @@ public class SimilarPlaylistsEngine {
             @Override
             public Stream<Tuple2id> similarElems(int idx) {
                 return super.similarElems(idx)
-                    .filter(element -> data.uidx2user(element.v1) < 1_000_000); // TODO: Constant
+                    .filter(element -> data.uidx2user(element.v1) < AppConfiguration.get().firstChallengeSetPlaylistId);
             }
         };
     }
@@ -96,10 +97,11 @@ public class SimilarPlaylistsEngine {
 
         int max = (int) DatabaseService
             .readStore(DatabaseService.Store.PLAYLIST)
-            .filter(data -> Integer.parseInt(data.split(DatabaseService.DELIMITER)[0]) < 1_000_000) // TODO: Constant
+            .filter(data -> Integer.parseInt(data.split(DatabaseService.DELIMITER)[0])
+                < AppConfiguration.get().firstChallengeSetPlaylistId)
             .count();
 
-        int k = minNumberOfTracks / 250; // TODO: Constant
+        int k = minNumberOfTracks / AppConfiguration.get().minNumberOfTracksPerDatasetPlaylist;
         boolean accepted = false;
 
         while (!accepted) {

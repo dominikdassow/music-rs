@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.task;
 
+import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationAlgorithm;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationProblem;
@@ -7,15 +8,14 @@ import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
 import de.dominikdassow.musicrs.service.DatabaseService;
 import de.dominikdassow.musicrs.study.ExecuteAlgorithms;
+import de.dominikdassow.musicrs.study.GenerateReferenceParetoFront;
 import de.dominikdassow.musicrs.study.GenerateTrackIdsForBestParetoSets;
 import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.lab.experiment.Experiment;
 import org.uma.jmetal.lab.experiment.ExperimentBuilder;
 import org.uma.jmetal.lab.experiment.component.impl.ComputeQualityIndicators;
-import org.uma.jmetal.lab.experiment.component.impl.GenerateReferenceParetoFront;
 import org.uma.jmetal.lab.experiment.util.ExperimentAlgorithm;
 import org.uma.jmetal.lab.experiment.util.ExperimentProblem;
-import org.uma.jmetal.qualityindicator.impl.Epsilon;
 import org.uma.jmetal.qualityindicator.impl.hypervolume.impl.PISAHypervolume;
 import org.uma.jmetal.solution.Solution;
 
@@ -35,9 +35,6 @@ public class ConductStudyTask
 
     private static final String STUDY_NAME = "MusicPlaylistContinuationStudy";
     private static final String STUDY_DIRECTORY = "../data/study";
-
-    private static final int MAX_RETRIES = 10;
-    private static final int INDEPENDENT_RUNS = 2; // TODO
 
     private SimilarTracksEngine similarTracksEngine;
 
@@ -98,7 +95,7 @@ public class ConductStudyTask
                     return problem;
                 });
 
-                IntStream.range(0, INDEPENDENT_RUNS).forEach(run -> {
+                IntStream.range(0, AppConfiguration.get().studyIndependentRuns).forEach(run -> {
                     ExperimentAlgorithm<Solution<Integer>, List<Solution<Integer>>> a
                         = new ExperimentAlgorithm<>(
                         algorithm.get(),
@@ -126,10 +123,10 @@ public class ConductStudyTask
                     new PISAHypervolume<>(),
                     new Epsilon<>()
                 ))
-                .setIndependentRuns(INDEPENDENT_RUNS)
+                .setIndependentRuns(AppConfiguration.get().studyIndependentRuns)
                 .build();
 
-        new ExecuteAlgorithms<>(experiment, MAX_RETRIES).run();
+        new ExecuteAlgorithms<>(experiment, AppConfiguration.get().studyMaxRetries).run();
         new GenerateReferenceParetoFront(experiment).run();
         new ComputeQualityIndicators<>(experiment).run();
         new GenerateTrackIdsForBestParetoSets(experiment).run();
@@ -153,8 +150,7 @@ public class ConductStudyTask
             .distinct()
             .count();
 
-        // TODO: Constant
-        if (numberOfUniqueTracks < 500) {
+        if (numberOfUniqueTracks < AppConfiguration.get().numberOfTracks) {
             log.warn("# [" + playlist + "] SIMILAR PLAYLISTS :: " +
                 "Not enough unique tracks: " + numberOfUniqueTracks);
 

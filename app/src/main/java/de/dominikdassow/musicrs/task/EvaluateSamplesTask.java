@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.task;
 
+import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.feature.FeatureGenerator;
@@ -99,7 +100,7 @@ public class EvaluateSamplesTask
             recommendation.getTracks().forEach(tracks -> {
                 final MusicPlaylistContinuationEvaluator evaluator = new MusicPlaylistContinuationEvaluator(
                     samples.get(recommendation.getPlaylist()).getOriginalTracks(),
-                    tracks.subList(0, 500).stream() // TODO: Constant
+                    tracks.subList(0, AppConfiguration.get().numberOfTracks).stream()
                         .map(allRecommendedTracks::get)
                         .collect(Collectors.toList())
                 );

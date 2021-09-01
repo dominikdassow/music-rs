@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.service;
 
+import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
@@ -90,16 +91,15 @@ public class RecommendationService {
                 .distinct()
                 .count();
 
-            // TODO: Constant
-            if (numberOfUniqueTracks < 500) {
+            if (numberOfUniqueTracks < AppConfiguration.get().numberOfTracks) {
                 log.trace("# [" + playlist + "] SIMILAR PLAYLISTS :: GENERATE");
 
                 if (tracks.isEmpty()) {
                     similarTracksLists = similarPlaylistsEngine
-                        .getRandomSimilarTracksFor(playlist, 600); // TODO: Constant
+                        .getRandomSimilarTracksFor(playlist, AppConfiguration.get().minNumberOfCandidateTracks);
                 } else {
                     similarTracksLists = similarPlaylistsEngine
-                        .getSimilarTracksFor(playlist, 600); // TODO: Constant
+                        .getSimilarTracksFor(playlist, AppConfiguration.get().minNumberOfCandidateTracks);
                 }
             }
 

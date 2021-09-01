@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.service;
 
+import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.feature.PlaylistFeature;
@@ -23,39 +24,42 @@ public class DatabaseService {
 //    public static final int NUMBER_OF_PLAYLISTS = 1_000_000;
 //    public static final int NUMBER_OF_TRACKS = 2_262_292;
 
-    public static final String STORE_VERSION = "10k_w_audio";
     public static final String DELIMITER = ",";
 
     public enum Store {
-        PLAYLIST("../data/store/" + STORE_VERSION + "/playlist.csv"),
-        PLAYLIST_FEATURE("../data/store/" + STORE_VERSION + "/playlist-feature.csv"),
-        TRACK("../data/store/" + STORE_VERSION + "/track.csv"),
-        TRACK_FEATURE("../data/store/" + STORE_VERSION + "/track-feature.csv"),
-        SIMILAR_TRACKS_LIST("../data/store/" + STORE_VERSION + "/similar-tracks-list.csv"),
+        PLAYLIST("../data/store/{version}/playlist.csv"),
+        PLAYLIST_FEATURE("../data/store/{version}/playlist-feature.csv"),
+        TRACK("../data/store/{version}/track.csv"),
+        TRACK_FEATURE("../data/store/{version}/track-feature.csv"),
+        SIMILAR_TRACKS_LIST("../data/store/{version}/similar-tracks-list.csv"),
         TRACK_AUDIO_FEATURE("../data/store/tracks-audio-feature.csv");
 
-        public final String file;
+        private final String file;
 
         Store(String file) {
             this.file = file;
+        }
+
+        public String getFile() {
+            return file.replace("{version}", AppConfiguration.get().storeVersion);
         }
     }
 
     private DatabaseService() {}
 
     public static PrintWriter newStore(Store store) throws IOException {
-        new PrintWriter(store.file).close();
+        new PrintWriter(store.getFile()).close();
 
         return openStore(store);
     }
 
     public static PrintWriter openStore(Store store) throws IOException {
-        return new PrintWriter(new FileWriter(store.file, true));
+        return new PrintWriter(new FileWriter(store.getFile(), true));
     }
 
     public static Stream<String> readStore(Store store) {
         try {
-            return Files.lines(Paths.get(store.file));
+            return Files.lines(Paths.get(store.getFile()));
         } catch (IOException e) {
             log.error(e.getMessage(), e);
 
@@ -66,7 +70,7 @@ public class DatabaseService {
     public static Stream<Integer> readAllPlaylistChallenges() {
         return readStore(DatabaseService.Store.PLAYLIST)
             .map(data -> Integer.parseInt(data.split(DELIMITER)[0]))
-            .filter(data -> data >= 1_000_000) // TODO: Constant
+            .filter(data -> data >= AppConfiguration.get().firstChallengeSetPlaylistId)
             .distinct();
     }
 

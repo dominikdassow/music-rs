@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.recommender.engine.playlist;
 
+import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.service.DatabaseService;
 import es.uam.eps.ir.ranksys.nn.neighborhood.TopKNeighborhood;
 import es.uam.eps.ir.ranksys.nn.user.neighborhood.UserNeighborhood;
@@ -19,15 +20,15 @@ public class SimilarPlaylistNeighborhood
         super(similarity, playlist -> {
             List<Tuple2id> neighbors = new ArrayList<>();
 
-            int k = minNumberOfTracks / 250; // TODO: Constant
+            int k = minNumberOfTracks / AppConfiguration.get().minNumberOfTracksPerDatasetPlaylist;
             boolean accepted = false;
 
             while (!accepted) {
                 neighbors.clear();
 
                 new TopKNeighborhood(similarity, k).getNeighbors(playlist)
-                    // TODO: Constant || Needed at all?
-                    .filter(neighbor -> similarity.uidx2user(neighbor.v1) < 1_000_000)
+                    .filter(neighbor -> similarity.uidx2user(neighbor.v1)
+                        < AppConfiguration.get().firstChallengeSetPlaylistId)
                     .forEach(neighbors::add);
 
                 k += 1;

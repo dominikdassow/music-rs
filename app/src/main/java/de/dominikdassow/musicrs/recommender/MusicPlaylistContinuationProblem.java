@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.recommender;
 
+import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
 import de.dominikdassow.musicrs.recommender.objective.AccuracyObjective;
@@ -61,7 +62,7 @@ public abstract class MusicPlaylistContinuationProblem<S extends Solution<Intege
 
         for (int i = 0; i < objectives.size(); i++) {
             solution.setObjective(i, objectives.get(i)
-                .evaluate(tracks.subList(0, Math.min(500, tracks.size())))); // TODO: Constant
+                .evaluate(tracks.subList(0, Math.min(AppConfiguration.get().numberOfTracks, tracks.size()))));
         }
     }
 
@@ -123,7 +124,9 @@ public abstract class MusicPlaylistContinuationProblem<S extends Solution<Intege
 
         @Override
         public boolean isCandidateRewardedInSolution(Integer candidate, GrowingSolution<Integer> solution) {
-            return solution.getVariables().indexOf(candidate) < 500; // TODO: Constant
+            return solution
+                .getVariables()
+                .indexOf(candidate) < AppConfiguration.get().numberOfTracks;
         }
 
         @Override

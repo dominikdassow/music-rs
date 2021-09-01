@@ -2,6 +2,7 @@ package de.dominikdassow.musicrs.task;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.model.feature.FeatureGenerator;
@@ -45,9 +46,9 @@ public class ImportDataTask
         // TODO: Currently not performing well at all when slicesPerBatch > 5 (only w/ audio features)
         // TODO: Parallel stream are not better right now. Why?
 
-        final int slices = 1_000; // TODO
-        final int slicesOffset = 0;
-        final int slicesPerBatch = 5; // TODO
+        final int slices = AppConfiguration.get().importSlices;
+        final int slicesOffset = AppConfiguration.get().importSlicesOffset;
+        final int slicesPerBatch = AppConfiguration.get().importSlicesPerBatch;
         final int sliceSize = 1_000;
 
         final List<Playlist> batchPlaylists = new ArrayList<>();

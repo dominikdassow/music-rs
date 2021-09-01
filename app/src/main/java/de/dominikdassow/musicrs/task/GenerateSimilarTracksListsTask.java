@@ -1,5 +1,6 @@
 package de.dominikdassow.musicrs.task;
 
+import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.recommender.engine.SimilarPlaylistsEngine;
 import de.dominikdassow.musicrs.service.DatabaseService;
@@ -33,10 +34,12 @@ public class GenerateSimilarTracksListsTask
             log.info("*** " + playlist);
 
             if (DatabaseService.readPlaylistTracks(playlist).size() == 0) {
-                similarPlaylistsEngine.getRandomSimilarTracksFor(playlist, 500) // TODO: Constant
+                similarPlaylistsEngine
+                    .getRandomSimilarTracksFor(playlist, AppConfiguration.get().minNumberOfCandidateTracks)
                     .forEach(similarTracksList -> store(playlist, similarTracksList));
             } else {
-                similarPlaylistsEngine.getSimilarTracksFor(playlist, 500) // TODO: Constant
+                similarPlaylistsEngine
+                    .getSimilarTracksFor(playlist, AppConfiguration.get().minNumberOfCandidateTracks)
                     .forEach(similarTracksList -> store(playlist, similarTracksList));
             }
 
