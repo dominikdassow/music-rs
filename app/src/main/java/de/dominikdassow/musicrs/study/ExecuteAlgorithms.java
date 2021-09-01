@@ -98,7 +98,7 @@ public class ExecuteAlgorithms<S extends Solution<?>, Result extends List<S>>
 
     protected void writeAlgorithmExecutionTime(ExperimentAlgorithm<?, ?> execution, long time) {
         String file = experiment.getExperimentBaseDirectory() + "/executionTime/"
-            + execution.getAlgorithmTag() + "--" + execution.getProblemTag() + "--" + execution.getRunId() + ".txt";
+            + execution.getProblemTag() + "." + execution.getAlgorithmTag() + "." + execution.getRunId() + ".txt";
 
         try (FileWriter writer = new FileWriter(file, false)) {
             writer.write(String.valueOf(time));
