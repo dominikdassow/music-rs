@@ -32,32 +32,29 @@ public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends GrowingSo
     }
 
     @Override
-    public void initPheromoneTrails() {
-        pheromoneTrails.forEach(PheromoneTrail::init);
-    }
-
-    @Override
     public void findBestSolutions() {
         IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
             S localBestSolution
                 = SolutionListUtils.findBestSolution(solutions, new ObjectiveComparator<>(objective));
 
             localBestSolutions.put(objective, localBestSolution);
-
-            updatePossibleGlobalBestSolution(objective, localBestSolution);
+            globalBestSolutions.get(objective).add(localBestSolution);
         });
     }
 
     @Override
     public void updatePheromoneTrails() {
         IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
+            S globalBestSolution = SolutionListUtils
+                .findBestSolution(globalBestSolutions.get(objective), new ObjectiveComparator<>(objective));
+
             S localBestSolution = localBestSolutions.get(objective);
 
             double localBestSolutionValue = algorithm.getProblem()
                 .applyObjectiveValueNormalization(objective, localBestSolution.getObjective(objective));
 
             double globalBestSolutionValue = algorithm.getProblem()
-                .applyObjectiveValueNormalization(objective, globalBestSolutions.get(objective).getObjective(objective));
+                .applyObjectiveValueNormalization(objective, globalBestSolution.getObjective(objective));
 
             pheromoneTrails.get(objective).update((candidate, value) -> {
                 value = algorithm.applyEvaporationFactor(value);
@@ -89,8 +86,8 @@ public class MultiObjectiveColonyWithMultiplePheromoneTrails<S extends GrowingSo
 
     @Override
     protected double getHeuristicFactor(S solution, T candidate) {
-        return IntStream.range(0, solution.getNumberOfObjectives())
-            .mapToDouble(objective -> algorithm.getProblem().evaluateCandidate(candidate, objective))
+        return IntStream.range(0, algorithm.getProblem().getNumberOfObjectives())
+            .mapToDouble(objective -> algorithm.getProblem().evaluate(candidate, objective))
             .sum();
     }
 

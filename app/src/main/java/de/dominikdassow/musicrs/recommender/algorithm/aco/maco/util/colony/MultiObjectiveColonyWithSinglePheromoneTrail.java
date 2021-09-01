@@ -25,20 +25,13 @@ public class MultiObjectiveColonyWithSinglePheromoneTrail<S extends GrowingSolut
     }
 
     @Override
-    public void initPheromoneTrails() {
-        pheromoneTrail.init();
-    }
-
-    @Override
     public void findBestSolutions() {
         IntStream.range(0, algorithm.getProblem().getNumberOfObjectives()).forEach(objective -> {
             List<S> nonDominatedSolutions
                 = SolutionListUtils.getNonDominatedSolutions(solutions);
 
             localBestSolutions.put(objective, nonDominatedSolutions);
-
-            nonDominatedSolutions
-                .forEach(solution -> updatePossibleGlobalBestSolution(objective, solution));
+            globalBestSolutions.get(objective).addAll(nonDominatedSolutions);
         });
     }
 
@@ -71,8 +64,8 @@ public class MultiObjectiveColonyWithSinglePheromoneTrail<S extends GrowingSolut
 
     @Override
     protected double getHeuristicFactor(S solution, T candidate) {
-        return IntStream.range(0, solution.getNumberOfObjectives())
-            .mapToDouble(objective -> algorithm.getProblem().evaluateCandidate(candidate, objective))
+        return IntStream.range(0, algorithm.getProblem().getNumberOfObjectives())
+            .mapToDouble(objective -> algorithm.getProblem().evaluate(candidate, objective))
             .sum();
     }
 

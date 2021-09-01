@@ -111,18 +111,9 @@ public abstract class MusicPlaylistContinuationProblem<S extends Solution<Intege
         }
 
         @Override
-        public double evaluateCandidate(Integer candidate, int objective) {
+        public double evaluate(Integer candidate, int objective) {
             return candidatesValues.get(candidate)
                 .computeIfAbsent(objective, o -> objectives.get(o).evaluate(candidateTracks.get(candidate)));
-        }
-
-        @Override
-        public boolean isBetter(
-            int objective,
-            GrowingSolution<Integer> solution,
-            GrowingSolution<Integer> solutionToDefy
-        ) {
-            return solution.getObjective(objective) > solutionToDefy.getObjective(objective);
         }
 
         @Override

@@ -10,9 +10,7 @@ public interface GrowingProblem<S extends GrowingSolution<T>, T>
 
     List<T> getCandidates();
 
-    double evaluateCandidate(T candidate, int objective);
-
-    boolean isBetter(int objective, S solution, S solutionToDefy);
+    double evaluate(T candidate, int objective);
 
     double applyObjectiveValueNormalization(int objective, double value);
 

@@ -5,8 +5,11 @@ import de.dominikdassow.musicrs.recommender.solution.GrowingSolution;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
+import org.uma.jmetal.util.SolutionListUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -16,38 +19,45 @@ import java.util.stream.IntStream;
 public abstract class Colony<S extends GrowingSolution<T>, T> {
 
     protected final MACO<S, T> algorithm;
-
-    protected final List<Ant<S, T>> ants = new ArrayList<>();
-    protected final Map<Integer, S> globalBestSolutions = new ConcurrentHashMap<>();
+    protected final List<Ant<S, T>> ants;
+    protected final Map<Integer, List<S>> globalBestSolutions;
 
     protected List<S> solutions;
 
     public Colony(MACO<S, T> algorithm) {
         this.algorithm = algorithm;
 
-        IntStream.range(0, algorithm.getNumberOfAnts())
-            .forEach(i -> ants.add(new Ant<>(algorithm, this)));
+        ants = IntStream.range(0, algorithm.getNumberOfAnts())
+            .boxed()
+            .map(i -> new Ant<>(algorithm, this))
+            .collect(Collectors.toList());
+
+        globalBestSolutions = new ConcurrentHashMap<>(algorithm.getProblem().getNumberOfObjectives()) {{
+            IntStream.range(0, algorithm.getProblem().getNumberOfObjectives())
+                .forEach(objective -> put(objective, new ArrayList<>()));
+        }};
     }
 
     public void createSolutions() {
         solutions = ants.parallelStream()
-            .map(ant -> {
-                S solution = ant.createSolution();
-                algorithm.getProblem().evaluate(solution);
-                return solution;
-            })
+            .map(Ant::createSolution)
+            .peek(solution -> algorithm.getProblem().evaluate(solution))
             .collect(Collectors.toList());
+
+        if (solutions.size() != ants.size()) {
+            log.info("#solution=" + solutions.size() + " :: #ants=" + ants.size());
+        }
     }
 
     public void reset() {
         solutions.clear();
     }
 
-    public Collection<S> getBestSolutions() {
-        return globalBestSolutions.values();
+    public List<S> getBestSolutions() {
+        return SolutionListUtils.getNonDominatedSolutions(new ArrayList<>() {{
+            globalBestSolutions.values().forEach(this::addAll);
+        }});
     }
-
-    public abstract void initPheromoneTrails();
 
     public abstract void findBestSolutions();
 
@@ -90,12 +100,5 @@ public abstract class Colony<S extends GrowingSolution<T>, T> {
             .collect(Collectors.toList());
 
         return new EnumeratedDistribution<>(candidatesWithProbability);
-    }
-
-    protected void updatePossibleGlobalBestSolution(int objective, S solution) {
-        boolean update = !globalBestSolutions.containsKey(objective) ||
-            algorithm.getProblem().isBetter(objective, solution, globalBestSolutions.get(objective));
-
-        if (update) globalBestSolutions.put(objective, solution);
     }
 }
