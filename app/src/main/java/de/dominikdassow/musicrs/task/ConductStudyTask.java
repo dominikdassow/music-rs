@@ -1,7 +1,6 @@
 package de.dominikdassow.musicrs.task;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.Streams;
 import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationAlgorithm;
@@ -16,8 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.lab.experiment.Experiment;
 import org.uma.jmetal.lab.experiment.ExperimentBuilder;
 import org.uma.jmetal.lab.experiment.component.impl.ComputeQualityIndicators;
+import org.uma.jmetal.lab.experiment.component.impl.GenerateFriedmanTestTables;
+import org.uma.jmetal.lab.experiment.component.impl.GenerateLatexTablesWithStatistics;
 import org.uma.jmetal.lab.experiment.util.ExperimentAlgorithm;
 import org.uma.jmetal.lab.experiment.util.ExperimentProblem;
+import org.uma.jmetal.lab.visualization.StudyVisualizer;
 import org.uma.jmetal.qualityindicator.impl.Epsilon;
 import org.uma.jmetal.qualityindicator.impl.hypervolume.impl.PISAHypervolume;
 import org.uma.jmetal.solution.Solution;
@@ -146,14 +148,18 @@ public class ConductStudyTask
                 .build();
 
         new ExecuteAlgorithms<>(experiment, AppConfiguration.get().studyMaxRetries).run();
-        new GenerateReferenceParetoFront(experiment).run();
-        new ComputeQualityIndicators<>(experiment).run();
-        new GenerateTrackIdsForBestParetoSets(experiment).run();
-        // TODO: Check study evaluations
-//        new GenerateFriedmanTestTables<>(experiment).run();
-//        new GenerateLatexTablesWithStatistics(experiment).run();
-//        new StudyVisualizer(STUDY_DIRECTORY + "/" + STUDY_NAME, StudyVisualizer.TYPE_OF_FRONT_TO_SHOW.MEDIAN)
-//            .createHTMLPageForEachIndicator();
+
+        if (AppConfiguration.get().studyGenerateResults) {
+            new GenerateReferenceParetoFront(experiment).run();
+            new ComputeQualityIndicators<>(experiment).run();
+            new GenerateTrackIdsForBestParetoSets(experiment).run();
+            // TODO: Check study evaluations
+            new GenerateFriedmanTestTables<>(experiment).run();
+            new GenerateLatexTablesWithStatistics(experiment).run();
+            new StudyVisualizer(AppConfiguration.get().dataDirectory + "/study/"
+                + AppConfiguration.get().studyName, StudyVisualizer.TYPE_OF_FRONT_TO_SHOW.MEDIAN)
+                .createHTMLPageForEachIndicator();
+        }
     }
 
     private Stream<Integer> getPlaylists() {

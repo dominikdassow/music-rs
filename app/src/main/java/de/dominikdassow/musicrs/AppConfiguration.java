@@ -17,13 +17,14 @@ public final class AppConfiguration {
 
     public int numberOfTracks;
     public int minNumberOfCandidateTracks;
-    public int minNumberOfTracksPerDatasetPlaylist;
+    public int maxNumberOfTracksPerDatasetPlaylist;
     public int firstChallengeSetPlaylistId;
     public int studyIndependentRuns;
     public int importSlices;
     public int importSlicesOffset;
     public int importSlicesPerBatch;
     public int studyMaxRetries;
+    public boolean studyGenerateResults;
     public String studyName;
     public String dataDirectory;
     public String storeVersion;
@@ -41,13 +42,14 @@ public final class AppConfiguration {
 
         numberOfTracks = json.get("numberOfTracks").asInt();
         minNumberOfCandidateTracks = json.get("minNumberOfCandidateTracks").asInt();
-        minNumberOfTracksPerDatasetPlaylist = json.get("minNumberOfTracksPerDatasetPlaylist").asInt();
+        maxNumberOfTracksPerDatasetPlaylist = json.get("minNumberOfTracksPerDatasetPlaylist").asInt();
         firstChallengeSetPlaylistId = json.get("firstChallengeSetPlaylistId").asInt();
         importSlices = json.get("importSlices").asInt();
         importSlicesOffset = json.get("importSlicesOffset").asInt();
         importSlicesPerBatch = json.get("importSlicesPerBatch").asInt();
         studyIndependentRuns = json.get("studyIndependentRuns").asInt();
         studyMaxRetries = json.get("studyMaxRetries").asInt();
+        studyGenerateResults = json.get("studyGenerateResults").asBoolean(false);
         studyName = json.get("studyName").asText();
         dataDirectory = json.get("dataDirectory").asText();
         storeVersion = json.get("storeVersion").asText();
