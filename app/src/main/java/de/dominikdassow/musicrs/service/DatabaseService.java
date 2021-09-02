@@ -93,9 +93,11 @@ public class DatabaseService {
     }
 
     public static Map<Integer, Map<Integer, String>> readPlaylistsTracks(Collection<Integer> playlists) {
+        final boolean doFilter = Objects.nonNull(playlists);
+
         final List<String[]> idsList = readStore(Store.PLAYLIST)
             .map(data -> data.split(DELIMITER))
-            .filter(data -> playlists.contains(Integer.parseInt(data[0])))
+            .filter(data -> !doFilter || playlists.contains(Integer.parseInt(data[0])))
             .collect(Collectors.toList());
 
         return new HashMap<>() {{
@@ -110,11 +112,8 @@ public class DatabaseService {
         }};
     }
 
-    public static long readNumberOfUniquePlaylistTracks(Collection<Integer> playlists) {
-        return readPlaylistsTracks(playlists).values().stream()
-            .flatMap(tracks -> tracks.values().stream())
-            .distinct()
-            .count();
+    public static Map<Integer, Map<Integer, String>> readPlaylistsTracks() {
+        return readPlaylistsTracks(null);
     }
 
     public static Set<PlaylistFeature> readPlaylistFeatures(Integer playlist) {
@@ -150,6 +149,23 @@ public class DatabaseService {
                 Double.parseDouble(data[1]))
             )
             .collect(Collectors.toList());
+    }
+
+    public static Map<Integer, List<SimilarTracksList>> readSimilarTracksLists() {
+        Map<Integer, List<SimilarTracksList>> similarTracksLists = new HashMap<>();
+
+        readStore(Store.SIMILAR_TRACKS_LIST)
+            .map(data -> data.split(DELIMITER))
+            .forEach(data -> {
+                Integer playlist = Integer.parseInt(data[0]);
+
+                similarTracksLists.putIfAbsent(playlist, new ArrayList<>());
+                similarTracksLists.get(playlist).add(new SimilarTracksList(
+                    Arrays.asList(data).subList(2, data.length),
+                    Double.parseDouble(data[1])));
+            });
+
+        return similarTracksLists;
     }
 
     public static Map<String, Map<TrackFeature.Audio, Double>> readTracksAudioFeatures(Collection<String> tracks) {

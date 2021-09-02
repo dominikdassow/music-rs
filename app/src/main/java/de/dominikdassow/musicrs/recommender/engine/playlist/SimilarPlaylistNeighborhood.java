@@ -1,7 +1,6 @@
 package de.dominikdassow.musicrs.recommender.engine.playlist;
 
 import de.dominikdassow.musicrs.AppConfiguration;
-import de.dominikdassow.musicrs.service.DatabaseService;
 import es.uam.eps.ir.ranksys.nn.neighborhood.TopKNeighborhood;
 import es.uam.eps.ir.ranksys.nn.user.neighborhood.UserNeighborhood;
 import es.uam.eps.ir.ranksys.nn.user.sim.UserSimilarity;
@@ -10,17 +9,20 @@ import org.ranksys.core.util.tuples.Tuple2id;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class SimilarPlaylistNeighborhood
     extends UserNeighborhood<Integer> {
 
-    public SimilarPlaylistNeighborhood(UserSimilarity<Integer> similarity, int minNumberOfTracks) {
+    public SimilarPlaylistNeighborhood(UserSimilarity<Integer> similarity, Predicate<List<Integer>> accept) {
         super(similarity, playlist -> {
             List<Tuple2id> neighbors = new ArrayList<>();
 
-            int k = minNumberOfTracks / AppConfiguration.get().minNumberOfTracksPerDatasetPlaylist;
+            int k = AppConfiguration.get().minNumberOfCandidateTracks /
+                AppConfiguration.get().maxNumberOfTracksPerDatasetPlaylist;
+
             boolean accepted = false;
 
             while (!accepted) {
@@ -32,10 +34,9 @@ public class SimilarPlaylistNeighborhood
                     .forEach(neighbors::add);
 
                 k += 1;
-                accepted = !neighbors.isEmpty() && DatabaseService
-                    .readNumberOfUniquePlaylistTracks(neighbors.stream()
-                        .map(neighbor -> similarity.uidx2user(neighbor.v1))
-                        .collect(Collectors.toList())) >= minNumberOfTracks;
+                accepted = !neighbors.isEmpty() && accept.test(neighbors.stream()
+                    .map(neighbor -> similarity.uidx2user(neighbor.v1))
+                    .collect(Collectors.toList()));
             }
 
             return neighbors.stream();

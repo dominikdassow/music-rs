@@ -96,10 +96,10 @@ public class RecommendationService {
 
                 if (tracks.isEmpty()) {
                     similarTracksLists = similarPlaylistsEngine
-                        .getRandomSimilarTracksFor(playlist, AppConfiguration.get().minNumberOfCandidateTracks);
+                        .getRandomSimilarTracksFor(playlist);
                 } else {
                     similarTracksLists = similarPlaylistsEngine
-                        .getSimilarTracksFor(playlist, AppConfiguration.get().minNumberOfCandidateTracks);
+                        .getSimilarTracksFor(playlist);
                 }
             }
 
