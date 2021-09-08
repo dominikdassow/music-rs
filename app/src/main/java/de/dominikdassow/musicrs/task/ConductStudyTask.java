@@ -42,12 +42,12 @@ public class ConductStudyTask
 
     private SimilarTracksEngine similarTracksEngine;
 
-    private Set<Integer> playlists;
+    private Stream<Integer> playlists;
 
     private List<AlgorithmConfiguration<? extends Solution<Integer>>> algorithmConfigurations;
 
     public ConductStudyTask() {
-        super("Conduct Study");
+        super("Conduct Study (" + AppConfiguration.get().studyName + ")");
     }
 
     public ConductStudyTask fromConfiguration() {
@@ -55,11 +55,32 @@ public class ConductStudyTask
 
         log.info(json.toPrettyString());
 
-        this.playlists = StreamSupport.stream(json.get("studyPlaylists").spliterator(), false)
-            .map(JsonNode::asInt)
-            .collect(Collectors.toSet());
+        JsonNode jsonPlaylists = json.get("studyPlaylists");
 
-        this.algorithmConfigurations = StreamSupport.stream(json.get("studyAlgorithms").spliterator(), false)
+        if (jsonPlaylists.isNull()) {
+            log.info("No playlists specified. Using all challenge playlists...");
+
+            playlists = DatabaseService
+                .readAllPlaylistChallenges()
+                .sorted()
+                .distinct();
+        } else if (jsonPlaylists.isObject()) {
+            log.info("Playlists range specified (" + jsonPlaylists + "). Using these challenge playlists...");
+
+            playlists = DatabaseService
+                .readAllPlaylistChallenges()
+                .sorted()
+                .distinct()
+                .skip(jsonPlaylists.get("offset").asInt())
+                .limit(jsonPlaylists.get("count").asInt());
+        } else {
+            playlists = StreamSupport.stream(jsonPlaylists.spliterator(), false)
+                .map(JsonNode::asInt)
+                .distinct();
+        }
+
+        algorithmConfigurations = StreamSupport.stream(json.get("studyAlgorithms").spliterator(), false)
+            .distinct()
             .map(name -> AlgorithmConfiguration.fromName(name.asText()))
             .collect(Collectors.toList());
 
@@ -67,13 +88,13 @@ public class ConductStudyTask
     }
 
     public ConductStudyTask forPlaylists(Integer... playlist) {
-        this.playlists = Set.of(playlist);
+        playlists = Set.of(playlist).stream();
 
         return this;
     }
 
     public ConductStudyTask using(List<AlgorithmConfiguration<? extends Solution<Integer>>> configurations) {
-        this.algorithmConfigurations = configurations;
+        algorithmConfigurations = configurations;
 
         return this;
     }
@@ -94,7 +115,7 @@ public class ConductStudyTask
         List<ExperimentAlgorithm<Solution<Integer>, List<Solution<Integer>>>> algorithms
             = new ArrayList<>();
 
-        getPlaylists().parallel().forEach(playlist -> {
+        playlists.parallel().forEach(playlist -> {
             MusicPlaylistContinuationProblem.Configuration problemConfiguration
                 = getProblemConfiguration(playlist);
 
@@ -160,10 +181,6 @@ public class ConductStudyTask
                 + AppConfiguration.get().studyName, StudyVisualizer.TYPE_OF_FRONT_TO_SHOW.MEDIAN)
                 .createHTMLPageForEachIndicator();
         }
-    }
-
-    private Stream<Integer> getPlaylists() {
-        return this.playlists == null ? DatabaseService.readAllPlaylistChallenges() : this.playlists.stream();
     }
 
     private MusicPlaylistContinuationProblem.Configuration getProblemConfiguration(Integer playlist) {
