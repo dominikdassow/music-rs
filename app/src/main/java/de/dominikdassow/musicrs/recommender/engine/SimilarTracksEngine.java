@@ -22,8 +22,6 @@ public class SimilarTracksEngine {
 
     private final ItemDistanceModel<String> distanceModel;
 
-    private final Map<String, Double> distances = new ConcurrentHashMap<>();
-
     public SimilarTracksEngine() {
         log.info("SimilarTracksEngine()");
 
@@ -61,16 +59,6 @@ public class SimilarTracksEngine {
     }
 
     public Double getDistanceBetween(String track1, String track2) {
-        final String key = track1 + "#" + track2;
-
-        if (distances.containsKey(key)) return distances.get(key);
-
-        final double distance = distanceModel.dist(track1, track2);
-
-        // Cache track ids in both "directions" since the distance is symmetric
-        distances.put(track1 + "#" + track2, distance);
-        distances.put(track2 + "#" + track1, distance);
-
-        return distance;
+        return distanceModel.dist(track1, track2);
     }
 }
