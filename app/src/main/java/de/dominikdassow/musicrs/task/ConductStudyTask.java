@@ -1,6 +1,7 @@
 package de.dominikdassow.musicrs.task;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Lists;
 import de.dominikdassow.musicrs.AppConfiguration;
 import de.dominikdassow.musicrs.model.SimilarTracksList;
 import de.dominikdassow.musicrs.recommender.MusicPlaylistContinuationAlgorithm;
@@ -9,17 +10,11 @@ import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
 import de.dominikdassow.musicrs.service.DatabaseService;
 import de.dominikdassow.musicrs.study.ExecuteAlgorithms;
-import de.dominikdassow.musicrs.study.GenerateReferenceParetoFront;
-import de.dominikdassow.musicrs.study.GenerateTrackIdsForBestParetoSets;
 import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.lab.experiment.Experiment;
 import org.uma.jmetal.lab.experiment.ExperimentBuilder;
-import org.uma.jmetal.lab.experiment.component.impl.ComputeQualityIndicators;
-import org.uma.jmetal.lab.experiment.component.impl.GenerateFriedmanTestTables;
-import org.uma.jmetal.lab.experiment.component.impl.GenerateLatexTablesWithStatistics;
 import org.uma.jmetal.lab.experiment.util.ExperimentAlgorithm;
 import org.uma.jmetal.lab.experiment.util.ExperimentProblem;
-import org.uma.jmetal.lab.visualization.StudyVisualizer;
 import org.uma.jmetal.qualityindicator.impl.Epsilon;
 import org.uma.jmetal.qualityindicator.impl.hypervolume.impl.PISAHypervolume;
 import org.uma.jmetal.solution.Solution;
@@ -33,16 +28,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 @Slf4j
 public class ConductStudyTask
     extends Task {
 
-    private SimilarTracksEngine similarTracksEngine;
+    private final List<List<Integer>> playlists = new ArrayList<>();
 
-    private Stream<Integer> playlists;
+    private SimilarTracksEngine similarTracksEngine;
 
     private List<AlgorithmConfiguration<? extends Solution<Integer>>> algorithmConfigurations;
 
@@ -60,23 +54,32 @@ public class ConductStudyTask
         if (jsonPlaylists.isNull()) {
             log.info("No playlists specified. Using all challenge playlists...");
 
-            playlists = DatabaseService
+            playlists.add(DatabaseService
                 .readAllPlaylistChallenges()
                 .sorted()
-                .distinct();
+                .distinct()
+                .collect(Collectors.toList()));
         } else if (jsonPlaylists.isObject()) {
             log.info("Playlists range specified (" + jsonPlaylists + "). Using these challenge playlists...");
 
-            playlists = DatabaseService
+            List<Integer> playlistsInRange = DatabaseService
                 .readAllPlaylistChallenges()
                 .sorted()
                 .distinct()
                 .skip(jsonPlaylists.get("offset").asInt())
-                .limit(jsonPlaylists.get("count").asInt());
+                .limit(jsonPlaylists.get("count").asInt())
+                .collect(Collectors.toList());
+
+            if (jsonPlaylists.hasNonNull("batchSize")) {
+                playlists.addAll(Lists.partition(playlistsInRange, jsonPlaylists.get("batchSize").asInt()));
+            } else {
+                playlists.add(playlistsInRange);
+            }
         } else {
-            playlists = StreamSupport.stream(jsonPlaylists.spliterator(), false)
+            playlists.add(StreamSupport.stream(jsonPlaylists.spliterator(), false)
                 .map(JsonNode::asInt)
-                .distinct();
+                .distinct()
+                .collect(Collectors.toList()));
         }
 
         algorithmConfigurations = StreamSupport.stream(json.get("studyAlgorithms").spliterator(), false)
@@ -88,7 +91,7 @@ public class ConductStudyTask
     }
 
     public ConductStudyTask forPlaylists(Integer... playlist) {
-        playlists = Set.of(playlist).stream();
+        playlists.add(new ArrayList<>(Set.of(playlist)));
 
         return this;
     }
@@ -109,78 +112,77 @@ public class ConductStudyTask
         log.info("NUMBER OF PROCESSORS: " + Runtime.getRuntime().availableProcessors());
         log.info("NUMBER OF THREADS: " + ForkJoinPool.commonPool().getParallelism());
 
-        Map<String, ExperimentProblem<Solution<Integer>>> problems
-            = new ConcurrentHashMap<>();
+        playlists.forEach(batch -> {
+            Map<String, ExperimentProblem<Solution<Integer>>> problems
+                = new ConcurrentHashMap<>();
 
-        List<ExperimentAlgorithm<Solution<Integer>, List<Solution<Integer>>>> algorithms
-            = new ArrayList<>();
+            List<ExperimentAlgorithm<Solution<Integer>, List<Solution<Integer>>>> algorithms
+                = new ArrayList<>();
 
-        playlists.parallel().forEach(playlist -> {
-            MusicPlaylistContinuationProblem.Configuration problemConfiguration
-                = getProblemConfiguration(playlist);
+            batch.parallelStream().forEach(playlist -> {
+                MusicPlaylistContinuationProblem.Configuration problemConfiguration
+                    = getProblemConfiguration(playlist);
 
-            String problemTag = "MPC_" + playlist;
+                String problemTag = "MPC_" + playlist;
 
-            algorithmConfigurations.forEach(algorithmConfiguration -> {
-                @SuppressWarnings("unchecked")
-                MusicPlaylistContinuationAlgorithm<Solution<Integer>> algorithm
-                    = (MusicPlaylistContinuationAlgorithm<Solution<Integer>>)
-                    algorithmConfiguration.createAlgorithmFor(problemConfiguration);
+                algorithmConfigurations.forEach(algorithmConfiguration -> {
+                    @SuppressWarnings("unchecked")
+                    MusicPlaylistContinuationAlgorithm<Solution<Integer>> algorithm
+                        = (MusicPlaylistContinuationAlgorithm<Solution<Integer>>)
+                        algorithmConfiguration.createAlgorithmFor(problemConfiguration);
 
-                problems.computeIfAbsent(problemTag, tag -> {
-                    ExperimentProblem<Solution<Integer>> problem
-                        = new ExperimentProblem<>(algorithm.getProblem(), tag);
+                    problems.computeIfAbsent(problemTag, tag -> {
+                        ExperimentProblem<Solution<Integer>> problem
+                            = new ExperimentProblem<>(algorithm.getProblem(), tag);
 
-                    problem.setReferenceFront(tag + ".csv");
+                        problem.setReferenceFront(tag + ".csv");
 
-                    return problem;
-                });
+                        return problem;
+                    });
 
-                IntStream.range(0, AppConfiguration.get().studyIndependentRuns).forEach(run -> {
-                    ExperimentAlgorithm<Solution<Integer>, List<Solution<Integer>>> a
-                        = new ExperimentAlgorithm<>(
-                        algorithm.get(),
-                        algorithmConfiguration.getName(),
-                        problems.get(problemTag),
-                        run
-                    );
-
-                    algorithms.add(a);
+                    IntStream.range(0, AppConfiguration.get().studyIndependentRuns)
+                        .forEach(run -> algorithms.add(new ExperimentAlgorithm<>(
+                            algorithm.get(),
+                            algorithmConfiguration.getName(),
+                            problems.get(problemTag),
+                            run
+                        )));
                 });
             });
+
+            Experiment<Solution<Integer>, List<Solution<Integer>>> experiment =
+                new ExperimentBuilder<Solution<Integer>, List<Solution<Integer>>>(AppConfiguration.get().studyName)
+                    .setAlgorithmList(algorithms)
+                    .setProblemList(new ArrayList<>(problems.values()))
+                    .setExperimentBaseDirectory(AppConfiguration.get().dataDirectory + "/study")
+                    .setOutputParetoFrontFileName("FUN")
+                    .setOutputParetoSetFileName("VAR")
+                    .setReferenceFrontDirectory(AppConfiguration.get().dataDirectory + "/study/"
+                        + AppConfiguration.get().studyName + "/referenceFronts")
+                    .setIndicatorList(List.of(
+                        // TODO: Check used indicators
+                        // new NormalizedHypervolume<>(),
+                        new PISAHypervolume<>(),
+                        new Epsilon<>()
+                    ))
+                    .setIndependentRuns(AppConfiguration.get().studyIndependentRuns)
+                    .build();
+
+            new ExecuteAlgorithms<>(experiment, AppConfiguration.get().studyMaxRetries).run();
+
+            // TODO
+//            if (AppConfiguration.get().studyGenerateResults) {
+//                new GenerateReferenceParetoFront(experiment).run();
+//                new ComputeQualityIndicators<>(experiment).run();
+//                new GenerateTrackIdsForBestParetoSets(experiment).run();
+//                // TODO: Check study evaluations
+//                new GenerateFriedmanTestTables<>(experiment).run();
+//                new GenerateLatexTablesWithStatistics(experiment).run();
+//                new StudyVisualizer(AppConfiguration.get().dataDirectory + "/study/"
+//                    + AppConfiguration.get().studyName, StudyVisualizer.TYPE_OF_FRONT_TO_SHOW.MEDIAN)
+//                    .createHTMLPageForEachIndicator();
+//            }
         });
-
-        Experiment<Solution<Integer>, List<Solution<Integer>>> experiment =
-            new ExperimentBuilder<Solution<Integer>, List<Solution<Integer>>>(AppConfiguration.get().studyName)
-                .setAlgorithmList(algorithms)
-                .setProblemList(new ArrayList<>(problems.values()))
-                .setExperimentBaseDirectory(AppConfiguration.get().dataDirectory + "/study")
-                .setOutputParetoFrontFileName("FUN")
-                .setOutputParetoSetFileName("VAR")
-                .setReferenceFrontDirectory(AppConfiguration.get().dataDirectory + "/study/"
-                    + AppConfiguration.get().studyName + "/referenceFronts")
-                .setIndicatorList(List.of(
-                    // TODO: Check used indicators
-                    // new NormalizedHypervolume<>(),
-                    new PISAHypervolume<>(),
-                    new Epsilon<>()
-                ))
-                .setIndependentRuns(AppConfiguration.get().studyIndependentRuns)
-                .build();
-
-        new ExecuteAlgorithms<>(experiment, AppConfiguration.get().studyMaxRetries).run();
-
-        if (AppConfiguration.get().studyGenerateResults) {
-            new GenerateReferenceParetoFront(experiment).run();
-            new ComputeQualityIndicators<>(experiment).run();
-            new GenerateTrackIdsForBestParetoSets(experiment).run();
-            // TODO: Check study evaluations
-            new GenerateFriedmanTestTables<>(experiment).run();
-            new GenerateLatexTablesWithStatistics(experiment).run();
-            new StudyVisualizer(AppConfiguration.get().dataDirectory + "/study/"
-                + AppConfiguration.get().studyName, StudyVisualizer.TYPE_OF_FRONT_TO_SHOW.MEDIAN)
-                .createHTMLPageForEachIndicator();
-        }
     }
 
     private MusicPlaylistContinuationProblem.Configuration getProblemConfiguration(Integer playlist) {
