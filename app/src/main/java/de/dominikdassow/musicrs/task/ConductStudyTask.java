@@ -10,12 +10,17 @@ import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
 import de.dominikdassow.musicrs.service.DatabaseService;
 import de.dominikdassow.musicrs.study.ExecuteAlgorithms;
+import de.dominikdassow.musicrs.study.GenerateReferenceParetoFront;
+import de.dominikdassow.musicrs.study.GenerateTrackIdsForBestParetoSets;
 import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.lab.experiment.Experiment;
 import org.uma.jmetal.lab.experiment.ExperimentBuilder;
+import org.uma.jmetal.lab.experiment.component.impl.ComputeQualityIndicators;
+import org.uma.jmetal.lab.experiment.component.impl.GenerateFriedmanTestTables;
+import org.uma.jmetal.lab.experiment.component.impl.GenerateLatexTablesWithStatistics;
 import org.uma.jmetal.lab.experiment.util.ExperimentAlgorithm;
 import org.uma.jmetal.lab.experiment.util.ExperimentProblem;
-import org.uma.jmetal.qualityindicator.impl.Epsilon;
+import org.uma.jmetal.lab.visualization.StudyVisualizer;
 import org.uma.jmetal.qualityindicator.impl.hypervolume.impl.PISAHypervolume;
 import org.uma.jmetal.solution.Solution;
 
@@ -39,6 +44,9 @@ public class ConductStudyTask
     private SimilarTracksEngine similarTracksEngine;
 
     private List<AlgorithmConfiguration<? extends Solution<Integer>>> algorithmConfigurations;
+
+    private Map<Integer, List<SimilarTracksList>> similarTracksListsByPlaylist;
+    private Map<Integer, Map<Integer, String>> tracksListsByPlaylist;
 
     public ConductStudyTask() {
         super("Conduct Study (" + AppConfiguration.get().studyName + ")");
@@ -86,6 +94,14 @@ public class ConductStudyTask
             .distinct()
             .map(name -> AlgorithmConfiguration.fromName(name.asText()))
             .collect(Collectors.toList());
+
+        if (json.hasNonNull("studyPlaylistsPreload") && json.get("studyPlaylistsPreload").asBoolean()) {
+            similarTracksListsByPlaylist = DatabaseService.readSimilarTracksLists();
+            log.info("Preload :: similarTracksListsByPlaylist=" + similarTracksListsByPlaylist.size());
+
+            tracksListsByPlaylist = DatabaseService.readPlaylistsTracks();
+            log.info("Preload :: tracksListsByPlaylist=" + tracksListsByPlaylist.size());
+        }
 
         return this;
     }
@@ -160,34 +176,33 @@ public class ConductStudyTask
                     .setReferenceFrontDirectory(AppConfiguration.get().dataDirectory + "/study/"
                         + AppConfiguration.get().studyName + "/referenceFronts")
                     .setIndicatorList(List.of(
-                        // TODO: Check used indicators
-                        // new NormalizedHypervolume<>(),
-                        new PISAHypervolume<>(),
-                        new Epsilon<>()
+                        new PISAHypervolume<>()
                     ))
                     .setIndependentRuns(AppConfiguration.get().studyIndependentRuns)
                     .build();
 
             new ExecuteAlgorithms<>(experiment, AppConfiguration.get().studyMaxRetries).run();
 
-            // TODO
-//            if (AppConfiguration.get().studyGenerateResults) {
-//                new GenerateReferenceParetoFront(experiment).run();
-//                new ComputeQualityIndicators<>(experiment).run();
-//                new GenerateTrackIdsForBestParetoSets(experiment).run();
-//                // TODO: Check study evaluations
-//                new GenerateFriedmanTestTables<>(experiment).run();
-//                new GenerateLatexTablesWithStatistics(experiment).run();
-//                new StudyVisualizer(AppConfiguration.get().dataDirectory + "/study/"
-//                    + AppConfiguration.get().studyName, StudyVisualizer.TYPE_OF_FRONT_TO_SHOW.MEDIAN)
-//                    .createHTMLPageForEachIndicator();
-//            }
+            if (AppConfiguration.get().studyGenerateResults) {
+                try {
+                    new GenerateReferenceParetoFront(experiment).run();
+                    new ComputeQualityIndicators<>(experiment).run();
+                    new GenerateTrackIdsForBestParetoSets(experiment).run();
+                    new GenerateFriedmanTestTables<>(experiment).run();
+                    new GenerateLatexTablesWithStatistics(experiment).run();
+                    new StudyVisualizer(AppConfiguration.get().dataDirectory + "/study/"
+                        + AppConfiguration.get().studyName, StudyVisualizer.TYPE_OF_FRONT_TO_SHOW.MEDIAN)
+                        .createHTMLPageForEachIndicator();
+                } catch (IOException e) {
+                    log.error(e.getMessage(), e);
+                    e.printStackTrace();
+                }
+            }
         });
     }
 
     private MusicPlaylistContinuationProblem.Configuration getProblemConfiguration(Integer playlist) {
-        List<SimilarTracksList> similarTracksLists
-            = DatabaseService.readSimilarTracksLists(playlist);
+        List<SimilarTracksList> similarTracksLists = getSimilarTracksLists(playlist);
 
         long numberOfUniqueTracks = similarTracksLists.stream()
             .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
@@ -210,9 +225,22 @@ public class ConductStudyTask
 //            .distinct()
 //            .count());
 
-        Map<Integer, String> tracks
-            = DatabaseService.readPlaylistTracks(playlist);
+        Map<Integer, String> tracks = getTracksLists(playlist);
 
         return new MusicPlaylistContinuationProblem.Configuration(similarTracksEngine, similarTracksLists, tracks);
+    }
+
+    private List<SimilarTracksList> getSimilarTracksLists(Integer playlist) {
+        if (similarTracksListsByPlaylist == null || !similarTracksListsByPlaylist.containsKey(playlist))
+            return DatabaseService.readSimilarTracksLists(playlist);
+
+        return similarTracksListsByPlaylist.get(playlist);
+    }
+
+    private Map<Integer, String> getTracksLists(Integer playlist) {
+        if (tracksListsByPlaylist == null || !tracksListsByPlaylist.containsKey(playlist))
+            return DatabaseService.readPlaylistTracks(playlist);
+
+        return tracksListsByPlaylist.get(playlist);
     }
 }
