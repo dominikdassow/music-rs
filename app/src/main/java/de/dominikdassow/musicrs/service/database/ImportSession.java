@@ -1,19 +1,19 @@
 package de.dominikdassow.musicrs.service.database;
 
+import com.google.common.primitives.Ints;
 import de.dominikdassow.musicrs.model.Playlist;
 import de.dominikdassow.musicrs.model.Track;
 import de.dominikdassow.musicrs.service.DatabaseService;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@Slf4j
 public class ImportSession {
 
     public final PrintWriter playlistStore;
@@ -52,7 +52,7 @@ public class ImportSession {
             // Ensure track positions by storing empty strings for non-existing positions.
             // Important for for challenge playlists with randomly missing tacks.
             final String tracks = IntStream
-                .range(0, playlist.getTracks().size())
+                .rangeClosed(0, (playlist.getTracks().size() == 0) ? 0 : Collections.max(playlist.getTracks().keySet()))
                 .mapToObj(i -> playlist.getTracks().containsKey(i) ? playlist.getTracks().get(i).getId() : "")
                 .collect(Collectors.joining(DatabaseService.DELIMITER));
 
