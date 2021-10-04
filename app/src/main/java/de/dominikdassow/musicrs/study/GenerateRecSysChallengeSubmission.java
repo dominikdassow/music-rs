@@ -36,6 +36,8 @@ public class GenerateRecSysChallengeSubmission
     @Override
     public void run() throws IOException {
         try {
+            // Loading the new playlist store version here,
+            // otherwise the import bug would have resulted in duplicate submission tracks
             String newStoreFile = "{data}/store/{version}/playlist.csv"
                 .replace("{data}", AppConfiguration.get().dataDirectory)
                 .replace("{version}", AppConfiguration.get().storeVersion + "__NEW");
