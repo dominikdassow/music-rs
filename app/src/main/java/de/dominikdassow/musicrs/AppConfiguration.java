@@ -28,6 +28,8 @@ public final class AppConfiguration {
     public String studyName;
     public String dataDirectory;
     public String storeVersion;
+    public String submissionTeamInfo;
+    public long submissionRandomSeed;
 
     private AppConfiguration() {}
 
@@ -53,6 +55,8 @@ public final class AppConfiguration {
         studyName = json.get("studyName").asText();
         dataDirectory = json.get("dataDirectory").asText();
         storeVersion = json.get("storeVersion").asText();
+        submissionTeamInfo = json.get("submissionTeamInfo").asText("...,...");
+        submissionRandomSeed = json.get("submissionRandomSeed").asLong(123L);
     }
 
     @SneakyThrows

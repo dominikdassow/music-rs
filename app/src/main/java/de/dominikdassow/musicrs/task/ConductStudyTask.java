@@ -10,17 +10,14 @@ import de.dominikdassow.musicrs.recommender.algorithm.AlgorithmConfiguration;
 import de.dominikdassow.musicrs.recommender.engine.SimilarTracksEngine;
 import de.dominikdassow.musicrs.service.DatabaseService;
 import de.dominikdassow.musicrs.study.ExecuteAlgorithms;
-import de.dominikdassow.musicrs.study.GenerateReferenceParetoFront;
-import de.dominikdassow.musicrs.study.GenerateTrackIdsForBestParetoSets;
+import de.dominikdassow.musicrs.study.GenerateRecSysChallengeSubmission;
 import lombok.extern.slf4j.Slf4j;
 import org.uma.jmetal.lab.experiment.Experiment;
 import org.uma.jmetal.lab.experiment.ExperimentBuilder;
 import org.uma.jmetal.lab.experiment.component.impl.ComputeQualityIndicators;
-import org.uma.jmetal.lab.experiment.component.impl.GenerateFriedmanTestTables;
-import org.uma.jmetal.lab.experiment.component.impl.GenerateLatexTablesWithStatistics;
+import org.uma.jmetal.lab.experiment.component.impl.GenerateReferenceParetoFront;
 import org.uma.jmetal.lab.experiment.util.ExperimentAlgorithm;
 import org.uma.jmetal.lab.experiment.util.ExperimentProblem;
-import org.uma.jmetal.lab.visualization.StudyVisualizer;
 import org.uma.jmetal.qualityindicator.impl.hypervolume.impl.PISAHypervolume;
 import org.uma.jmetal.solution.Solution;
 
@@ -187,12 +184,7 @@ public class ConductStudyTask
                 try {
                     new GenerateReferenceParetoFront(experiment).run();
                     new ComputeQualityIndicators<>(experiment).run();
-                    new GenerateTrackIdsForBestParetoSets(experiment).run();
-                    new GenerateFriedmanTestTables<>(experiment).run();
-                    new GenerateLatexTablesWithStatistics(experiment).run();
-                    new StudyVisualizer(AppConfiguration.get().dataDirectory + "/study/"
-                        + AppConfiguration.get().studyName, StudyVisualizer.TYPE_OF_FRONT_TO_SHOW.MEDIAN)
-                        .createHTMLPageForEachIndicator();
+                    new GenerateRecSysChallengeSubmission(experiment).run();
                 } catch (IOException e) {
                     log.error(e.getMessage(), e);
                     e.printStackTrace();
@@ -217,13 +209,6 @@ public class ConductStudyTask
         }
 
         log.info("# [" + playlist + "] SIMILAR PLAYLISTS :: " + numberOfUniqueTracks);
-
-//        log.info("# [" + playlist + "] SIMILAR PLAYLISTS :: "
-//            + similarTracksLists.size() + " :: "
-//            + similarTracksLists.stream()
-//            .flatMap(similarTracksList -> similarTracksList.getTracks().stream())
-//            .distinct()
-//            .count());
 
         Map<Integer, String> tracks = getTracksLists(playlist);
 

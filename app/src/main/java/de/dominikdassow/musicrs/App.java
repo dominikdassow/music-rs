@@ -1,10 +1,6 @@
 package de.dominikdassow.musicrs;
 
 import de.dominikdassow.musicrs.recommender.algorithm.MACO;
-import de.dominikdassow.musicrs.recommender.algorithm.NOOP;
-import de.dominikdassow.musicrs.recommender.algorithm.NSGAII;
-import de.dominikdassow.musicrs.recommender.algorithm.SMSEMOA;
-import de.dominikdassow.musicrs.service.DatabaseService;
 import de.dominikdassow.musicrs.task.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,7 +55,7 @@ public class App {
                         new GenerateSimilarTracksListsTask().run();
                         break;
                     case "study":
-                        new ConductStudyTask().fromConfiguration();
+                        new ConductStudyTask().fromConfiguration().run();
                         break;
                     default:
                         log.warn("No task with name '" + task + "' found.");
@@ -70,7 +66,13 @@ public class App {
             return;
         }
 
-        final Task.Type task = Task.Type.CONDUCT_STUDY;
+        // new EvaluateStudyTask().run();
+        // new ImportDataTask().run();
+        // new ConductStudyTask().fromConfiguration().run();
+
+        if (true) return;
+
+        final Task.Type task = Task.Type.GENERATE_SIMILAR_TRACKS_LISTS;
 
         switch (task) {
             case DOWNLOAD_SPOTIFY_DATA:
@@ -137,7 +139,7 @@ public class App {
             case CONDUCT_STUDY:
                 conductStudyTask
                     // 0, 1, 5, 10, 25, 100 (number of tracks)
-                    // .forPlaylists(1_000_069, 1_003_178, 1_006_778, 1_008_706, 1002349, 1020917)
+                    // .forPlaylists(1000069, 1003178, 1006778, 1008706, 1002349, 1020917)
                     .forPlaylists(1_008_706)
                     .using(List.of(
 //                        NOOP.Configuration.builder()
