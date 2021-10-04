@@ -1,0 +1,32 @@
+{
+  "numberOfTracks": 500,
+  "minNumberOfCandidateTracks": 600,
+  "minNumberOfTracksPerDatasetPlaylist": 250,
+  "firstChallengeSetPlaylistId": 1000000,
+  "importSlices": 5,
+  "importSlicesOffset": 0,
+  "importSlicesPerBatch": 5,
+  "studyIndependentRuns": 1,
+  "studyMaxRetries": 1,
+  "studyGenerateResults": true,
+  "studyName": "TestFullMusicPlaylistContinuationStudy",
+  "studyEvaluateFile": "../data/results/Preliminary/QualityIndicatorSummary.csv",
+  "dataDirectory": "../data",
+  "storeVersion": "10k_w_audio",
+  "studyPlaylists": [
+    1010009,
+    1049269,
+    1049300,
+    1049316,
+    1049352,
+    1049360
+  ],
+  "studyPlaylistsPreload": true,
+  "studyAlgorithms": [
+    "NOOP__50",
+    "NSGAII__100__25000__0_95__0_005"
+  ],
+  "submissionTeamInfo": "dominik_dassow,dominik@dassow-net.de",
+  "submissionRandomSeed": 123,
+  "webhookUrlX": "https://api.pushcut.io/PGsChSWqr6MsM0uFkvkIp/notifications/Music%20RS"
+}
